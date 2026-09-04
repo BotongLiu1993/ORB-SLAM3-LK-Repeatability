@@ -1,0 +1,14 @@
+====== LK Tracking Statistics ======
+Total frames:          2486
+LK attempts:           2486 (100%)
+LK pose used:          2484 (99.9195% of frames)
+LK success rate:       99.9195% (of attempts)
+Avg tracked points:    387.226
+====================================
+====== LK Tracking Statistics ======
+Total frames:          2486
+LK attempts:           2486 (100%)
+LK pose used:          2484 (99.9195% of frames)
+LK success rate:       99.9195% (of attempts)
+Avg tracked points:    387.226
+====================================

@@ -1,0 +1,169 @@
+########## LK -> adaptive_gate ##########
+--- LK
++++ adaptive_gate
+@@ -40,6 +40,125 @@
+ #include <opencv2/video/tracking.hpp>
+ #include <opencv2/core/eigen.hpp>
+ 
++#include <cstdio>
++#include <cstdlib>
++#include <algorithm>
++#include <cmath>
++
++namespace {
++
++struct AdaptiveGate {
++    static const int kWIN   = 256;    // sliding window of accepted d_t
++    static const int kWARM  = 30;     // samples before adapting
++    static const int kLONG  = 2000;   // long window for drift check
++    static const int kEARLY = 100;    // baseline samples for drift check
++
++    float  buf[kWIN] = {0.f};
++    int    n = 0, head = 0;
++    double sum = 0.0, sumSq = 0.0;
++
++    float  longBuf[kLONG] = {0.f};
++    int    longN = 0, longHead = 0;
++    double longSum = 0.0;
++    double earlyMean = -1.0;
++    int    earlyCount = 0;
++    long   lastAlarmFrame = -1000;
++
++    bool   enabled = true;
++    float  kMult = 4.0f;
++    float  tauMin = 0.05f, tauMax = 1.00f, fallbackTau = 0.40f;
++    float  alarmMult = 8.0f;
++    float  tauAdapt = 0.40f;
++    long   frames = 0, accepted = 0, rejected = 0, alarms = 0;
++
++    void configFromEnv() {
++        const char* e = 0;
++        if ((e = std::getenv("LK_ADAPTIVE_GATE")))         enabled    = (std::atoi(e) != 0);
++        if ((e = std::getenv("LK_ADAPTIVE_K")))            kMult      = (float)std::atof(e);
++        if ((e = std::getenv("LK_ADAPTIVE_MIN")))          tauMin     = (float)std::atof(e);
++        if ((e = std::getenv("LK_ADAPTIVE_MAX")))          tauMax     = (float)std::atof(e);
++        if ((e = std::getenv("LK_ALARM_MULT")))            alarmMult  = (float)std::atof(e);
++        if ((e = std::getenv("LK_CONSISTENCY_THRESHOLD"))) fallbackTau= (float)std::atof(e);
++        if (tauMin > tauMax) { float t = tauMin; tauMin = tauMax; tauMax = t; }
++    }
++
++    float medianAccepted() const {
++        if (n == 0) return 0.f;
++        float tmp[kWIN];
++        std::copy(buf, buf + n, tmp);
++        std::sort(tmp, tmp + n);
++        return (n % 2) ? tmp[n/2] : 0.5f * (tmp[n/2 - 1] + tmp[n/2]);
++    }
++
++    float adaptiveThreshold() {
++        if (n < kWARM) { tauAdapt = fallbackTau; return tauAdapt; }
++        double mean = sum / n;
++        double var  = std::max(0.0, sumSq / n - mean * mean);
++        float  tau  = (float)(mean + kMult * std::sqrt(var));
++        tauAdapt = std::max(tauMin, std::min(tauMax, tau));
++        return tauAdapt;
++    }
++
++    void addAccepted(float d) {
++        if (n == kWIN) {                       // full: evict oldest at head
++            sum  -= buf[head];
++            sumSq -= (double)buf[head] * buf[head];
++        }
++        buf[head] = d;
++        head = (head + 1) % kWIN;
++        if (n < kWIN) n++;
++        sum  += d;
++        sumSq += (double)d * d;
++
++        if (longN == kLONG) longSum -= longBuf[longHead];
++        longBuf[longHead] = d;
++        longHead = (longHead + 1) % kLONG;
++        if (longN < kLONG) longN++;
++        longSum += d;
++        if (earlyCount < kEARLY) {
++            earlyCount++;
++            earlyMean = (earlyMean < 0.0) ? d : (earlyMean * (earlyCount - 1) + d) / earlyCount;
++        }
++    }
++
++    void checkAlarm(float d, bool isAccepted) {
++        frames++;
++        if (isAccepted) accepted++; else rejected++;
++        if (!enabled) return;
++
++        float med = medianAccepted();
++        if (n >= kWARM && med > 1e-4f && d > alarmMult * med) {
++            printf("[LK-ALARM] d=%.3f tau=%.3f med=%.3f frames=%ld\n",
++                   d, tauAdapt, med, frames);
++            alarms++;
++            lastAlarmFrame = frames;
++        }
++        if (longN >= 300 && earlyMean > 1e-4f && frames - lastAlarmFrame > 50) {
++            double lm = longSum / longN;
++            if (lm > 3.0 * earlyMean) {
++                printf("[LK-ALARM-drift] longMean=%.3f earlyMean=%.3f frames=%ld\n",
++                       lm, earlyMean, frames);
++                alarms++;
++                lastAlarmFrame = frames;
++            }
++        }
++        if (frames % 200 == 0) {
++            printf("[LK-GATE] frames=%ld tau_adapt=%.3f med=%.3f accepted=%ld rejected=%ld\n",
++                   frames, tauAdapt, med, accepted, rejected);
++        }
++    }
++
++    void report() const {
++        printf("LK Adaptive Gate: enabled=%d tau_adapt=%.3f (min=%.3f max=%.3f) "
++               "frames=%ld accepted=%ld rejected=%ld alarms=%ld\n",
++               (int)enabled, tauAdapt, tauMin, tauMax, frames, accepted, rejected, alarms);
++    }
++};
++
++AdaptiveGate g_gate;
++
++} // end anonymous namespace
++
+ using namespace std;
+ 
+ namespace ORB_SLAM3
+@@ -3091,16 +3210,16 @@
+                     Eigen::Matrix3f Rrel = TcwMM.rotationMatrix().transpose() * TcwLK.rotationMatrix();
+                     float rotDev = Sophus::SO3f(Rrel).log().norm() * 180.0f / 3.14159265358979f;
+ 
+-                    // LK consistency threshold: configurable via env (ablation)
+-                    static float fLKConsTh = -1.0f;
+-                    if(fLKConsTh < 0.0f)
++                    // ---- Route C: adaptive gate + divergence alarm ----
++                    static bool s_gateInited = false;
++                    if(!s_gateInited)
+                     {
+-                        fLKConsTh = 0.40f;
+-                        const char* penv = getenv("LK_CONSISTENCY_THRESHOLD");
+-                        if(penv && penv[0] != '\0')
+-                            fLKConsTh = (float)atof(penv);
++                        g_gate.configFromEnv();
++                        s_gateInited = true;
+                     }
+-                    if(dist < fLKConsTh)
++                    const float tauUse = g_gate.enabled ? g_gate.adaptiveThreshold() : g_gate.fallbackTau;
++                    const bool  bAccept = (dist < tauUse);
++                    if(bAccept)
+                     {
+                         mCurrentFrame.SetPose(TcwLK);
+                         bLKused = true;
+@@ -3108,12 +3227,14 @@
+                         mnLKTrackedSum += (int)goodPtsCurr.size();
+                         mvLKRotDevAdopted.push_back(rotDev);
+                         mvLKTransDevAdopted.push_back(dist);
++                        g_gate.addAccepted(dist);
+                     }
+                     else
+                     {
+                         mvLKRotDevRejected.push_back(rotDev);
+                         mvLKTransDevRejected.push_back(dist);
+                     }
++                    g_gate.checkAlarm(dist, bAccept);
+                 }
+             }
+         }

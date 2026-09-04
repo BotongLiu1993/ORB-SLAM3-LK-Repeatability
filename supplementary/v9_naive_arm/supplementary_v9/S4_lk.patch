@@ -1,0 +1,473 @@
+########## baseline -> LK ##########
+--- baseline
++++ LK
+@@ -33,7 +33,12 @@
+ 
+ #include <mutex>
+ #include <chrono>
+-
++#include <fstream>
++#include <algorithm>
++#include <cstdlib>
++#include <cmath>
++#include <opencv2/video/tracking.hpp>
++#include <opencv2/core/eigen.hpp>
+ 
+ using namespace std;
+ 
+@@ -526,10 +531,157 @@
+ 
+ #endif
+ 
++
++// LK_ABLATION_TIMING_PATCH
++void Tracking::PrintLKStats()
++{
++    if(mnLKFrames > 0)
++    {
++        cout << endl << "====== LK Tracking Statistics ======" << endl;
++        cout << "Total frames:          " << mnLKFrames << endl;
++        cout << "LK attempts:           " << mnLKAttempts
++             << " (" << (100.0*mnLKAttempts/mnLKFrames) << "%)" << endl;
++        cout << "LK pose used:          " << mnLKUsed
++             << " (" << (100.0*mnLKUsed/mnLKFrames) << "% of frames)" << endl;
++        if(mnLKAttempts > 0)
++            cout << "LK success rate:       "
++                 << (100.0*mnLKUsed/mnLKAttempts) << "% (of attempts)" << endl;
++        if(mnLKUsed > 0)
++            cout << "Avg tracked points:    "
++                 << (float)mnLKTrackedSum/mnLKUsed << endl;
++        cout << "====================================" << endl;
++    }
++
++
++    // Rotation deviation statistics (LK vs motion model)
++    if(!mvLKRotDevAdopted.empty() || !mvLKRotDevRejected.empty())
++    {
++        cout << endl << "====== LK Rotation Deviation (LK vs MM) ======" << endl;
++        cout << "adopted samples: " << mvLKRotDevAdopted.size()
++             << "  rejected samples: " << mvLKRotDevRejected.size() << endl;
++        if(!mvLKRotDevAdopted.empty())
++        {
++            std::vector<float> v = mvLKRotDevAdopted;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "adopted rot dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back()
++                 << " p95 " << v[(int)(0.95*v.size())] << " deg" << endl;
++        }
++        if(!mvLKRotDevRejected.empty())
++        {
++            std::vector<float> v = mvLKRotDevRejected;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "rejected rot dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back()
++                 << " p95 " << v[(int)(0.95*v.size())] << " deg" << endl;
++        }
++        if(!mvLKTransDevAdopted.empty())
++        {
++            std::vector<float> v = mvLKTransDevAdopted;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "adopted trans dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back() << " m" << endl;
++        }
++        if(!mvLKTransDevRejected.empty())
++        {
++            std::vector<float> v = mvLKTransDevRejected;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "rejected trans dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back() << " m" << endl;
++        }
++        cout << "====================================================" << endl;
++    }
++
++    // Per-frame tracking time statistics
++    if(!mvTrackTimesMs.empty())
++    {
++        std::vector<float> v = mvTrackTimesMs;
++        std::sort(v.begin(), v.end());
++        float sum = 0;
++        for(float x : v) sum += x;
++        float mean = sum / v.size();
++        float var = 0;
++        for(float x : v) var += (x-mean)*(x-mean);
++        float stdv = sqrt(var / v.size());
++        cout << endl << "====== Tracking Time Statistics (ms) ======" << endl;
++        cout << "Frames:    " << v.size() << endl;
++        cout << "Mean:      " << mean << endl;
++        cout << "Median:    " << v[v.size()/2] << endl;
++        cout << "Std:       " << stdv << endl;
++        cout << "Min:       " << v.front() << endl;
++        cout << "Max:       " << v.back() << endl;
++        cout << "P95:       " << v[(int)(0.95*v.size())] << endl;
++        cout << "P99:       " << v[(int)(0.99*v.size())] << endl;
++        cout << "===========================================" << endl << endl;
++
++        // Save raw per-frame times for boxplots
++        ofstream fout("track_times_ms.txt");
++        for(float x : v) fout << x << endl;
++        fout.close();
++    }
++}
++
++
+ Tracking::~Tracking()
+ {
+     //f_track_stats.close();
+ 
++
++
++    // Rotation deviation statistics
++    if(!mvLKRotDevAdopted.empty() || !mvLKRotDevRejected.empty())
++    {
++        cout << endl << "====== LK Rotation Deviation (LK vs MM) ======" << endl;
++        cout << "adopted samples: " << mvLKRotDevAdopted.size()
++             << "  rejected samples: " << mvLKRotDevRejected.size() << endl;
++        if(!mvLKRotDevAdopted.empty())
++        {
++            std::vector<float> v = mvLKRotDevAdopted;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "adopted rot dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back()
++                 << " p95 " << v[(int)(0.95*v.size())] << " deg" << endl;
++        }
++        if(!mvLKRotDevRejected.empty())
++        {
++            std::vector<float> v = mvLKRotDevRejected;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "rejected rot dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back()
++                 << " p95 " << v[(int)(0.95*v.size())] << " deg" << endl;
++        }
++        if(!mvLKTransDevAdopted.empty())
++        {
++            std::vector<float> v = mvLKTransDevAdopted;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "adopted trans dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back() << " m" << endl;
++        }
++        if(!mvLKTransDevRejected.empty())
++        {
++            std::vector<float> v = mvLKTransDevRejected;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "rejected trans dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back() << " m" << endl;
++        }
++        cout << "====================================================" << endl << endl;
++    }
+ }
+ 
+ void Tracking::newParameterLoader(Settings *settings) {
+@@ -1510,7 +1662,17 @@
+ #endif
+ 
+     //cout << "Tracking start" << endl;
++    std::chrono::steady_clock::time_point t_track0 = std::chrono::steady_clock::now();
+     Track();
++    std::chrono::steady_clock::time_point t_track1 = std::chrono::steady_clock::now();
++    mvTrackTimesMs.push_back(std::chrono::duration_cast<std::chrono::microseconds>(t_track1 - t_track0).count() / 1000.0f);
++    // LK: save for next frame (stereo mode)
++    mImGray.copyTo(mLastImGray);
++    if(!mCurrentFrame.mvKeysUn.empty())
++        cv::KeyPoint::convert(mCurrentFrame.mvKeysUn, mLastKPs);
++    else if(!mCurrentFrame.mvKeys.empty())
++        cv::KeyPoint::convert(mCurrentFrame.mvKeys, mLastKPs);
++
+     //cout << "Tracking end" << endl;
+ 
+     return mCurrentFrame.GetPose();
+@@ -1557,8 +1719,16 @@
+     vdORBExtract_ms.push_back(mCurrentFrame.mTimeORB_Ext);
+ #endif
+ 
++    std::chrono::steady_clock::time_point t_track0 = std::chrono::steady_clock::now();
+     Track();
+-
++    std::chrono::steady_clock::time_point t_track1 = std::chrono::steady_clock::now();
++    mvTrackTimesMs.push_back(std::chrono::duration_cast<std::chrono::microseconds>(t_track1 - t_track0).count() / 1000.0f);
++    // LK: save for next frame
++    mImGray.copyTo(mLastImGray);
++    if(!mCurrentFrame.mvKeysUn.empty())
++        cv::KeyPoint::convert(mCurrentFrame.mvKeysUn, mLastKPs);
++    else if(!mCurrentFrame.mvKeys.empty())
++        cv::KeyPoint::convert(mCurrentFrame.mvKeys, mLastKPs);
+     return mCurrentFrame.GetPose();
+ }
+ 
+@@ -1609,7 +1779,10 @@
+ #endif
+ 
+     lastID = mCurrentFrame.mnId;
++    std::chrono::steady_clock::time_point t_track0 = std::chrono::steady_clock::now();
+     Track();
++    std::chrono::steady_clock::time_point t_track1 = std::chrono::steady_clock::now();
++    mvTrackTimesMs.push_back(std::chrono::duration_cast<std::chrono::microseconds>(t_track1 - t_track0).count() / 1000.0f);
+ 
+     return mCurrentFrame.GetPose();
+ }
+@@ -2854,28 +3027,119 @@
+ bool Tracking::TrackWithMotionModel()
+ {
+     ORBmatcher matcher(0.9,true);
+-
+-    // Update last frame pose according to its reference keyframe
+-    // Create "visual odometry" points if in Localization Mode
+     UpdateLastFrame();
+-
+-    if (mpAtlas->isImuInitialized() && (mCurrentFrame.mnId>mnLastRelocFrameId+mnFramesToResetIMU))
++    mnLKFrames++;
++    bool bLKused = false;
++    if(!mLastImGray.empty() && !mLastKPs.empty() && !mLastFrame.mvpMapPoints.empty())
+     {
+-        // Predict state with IMU if it is initialized and it doesnt need reset
+-        PredictStateIMU();
+-        return true;
++        std::vector<cv::Point2f> ptsLast;
++        std::vector<cv::Point3f> pts3D;
++        for(size_t i = 0; i < mLastKPs.size() && i < mLastFrame.N; i++)
++        {
++            MapPoint* pMP = mLastFrame.mvpMapPoints[i];
++            if(pMP && !pMP->isBad())
++            {
++                Eigen::Vector3f Pw = pMP->GetWorldPos();
++                ptsLast.push_back(mLastKPs[i]);
++                pts3D.push_back(cv::Point3f(Pw(0), Pw(1), Pw(2)));
++            }
++        }
++
++        if(ptsLast.size() > 15)
++        {
++            mnLKAttempts++;
++            std::vector<cv::Point2f> ptsCurr(ptsLast.size());
++            std::vector<uchar> status;
++            std::vector<float> err;
++            cv::calcOpticalFlowPyrLK(mLastImGray, mImGray,
++                                     ptsLast, ptsCurr, status, err,
++                                     cv::Size(15,15), 2,
++                                     cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 0.01));
++
++            std::vector<cv::Point2f> goodPtsCurr;
++            std::vector<cv::Point3f> goodPts3D;
++            for(size_t i = 0; i < status.size(); i++)
++            {
++                if(status[i])
++                {
++                    goodPtsCurr.push_back(ptsCurr[i]);
++                    goodPts3D.push_back(pts3D[i]);
++                }
++            }
++
++            if(goodPtsCurr.size() > 10)
++            {
++                cv::Mat R_cv, t_cv, inliers;
++                bool bPnP = cv::solvePnPRansac(goodPts3D, goodPtsCurr, mK, mDistCoef,
++                                               R_cv, t_cv, false, 100, 4.0f, 0.99, inliers, cv::SOLVEPNP_EPNP);
++                if(bPnP && inliers.rows > 6)
++                {
++                    cv::Mat R_mat;
++                    cv::Rodrigues(R_cv, R_mat);
++                    Eigen::Matrix3f Re;
++                    cv::cv2eigen(R_mat, Re);
++                    Eigen::Vector3f te;
++                    cv::cv2eigen(t_cv, te);
++                    Sophus::SE3f TcwLK(Re, te);
++
++                    Sophus::SE3f TcwMM = mVelocity * mLastFrame.GetPose();
++                    Eigen::Vector3f transLK = TcwLK.translation();
++                    Eigen::Vector3f transMM = TcwMM.translation();
++                    float dist = (transLK - transMM).norm();
++
++                    // Rotation deviation (deg) between LK pose and motion-model pose
++                    Eigen::Matrix3f Rrel = TcwMM.rotationMatrix().transpose() * TcwLK.rotationMatrix();
++                    float rotDev = Sophus::SO3f(Rrel).log().norm() * 180.0f / 3.14159265358979f;
++
++                    // LK consistency threshold: configurable via env (ablation)
++                    static float fLKConsTh = -1.0f;
++                    if(fLKConsTh < 0.0f)
++                    {
++                        fLKConsTh = 0.40f;
++                        const char* penv = getenv("LK_CONSISTENCY_THRESHOLD");
++                        if(penv && penv[0] != '\0')
++                            fLKConsTh = (float)atof(penv);
++                    }
++                    if(dist < fLKConsTh)
++                    {
++                        mCurrentFrame.SetPose(TcwLK);
++                        bLKused = true;
++                        mnLKUsed++;
++                        mnLKTrackedSum += (int)goodPtsCurr.size();
++                        mvLKRotDevAdopted.push_back(rotDev);
++                        mvLKTransDevAdopted.push_back(dist);
++                    }
++                    else
++                    {
++                        mvLKRotDevRejected.push_back(rotDev);
++                        mvLKTransDevRejected.push_back(dist);
++                    }
++                }
++            }
++        }
+     }
+-    else
++
++    if(!bLKused)
+     {
+-        mCurrentFrame.SetPose(mVelocity * mLastFrame.GetPose());
++        if (mpAtlas->isImuInitialized() && (mCurrentFrame.mnId>mnLastRelocFrameId+mnFramesToResetIMU))
++        {
++
++            PredictStateIMU();
++            return true;
++        }
++        else
++        {
++            mCurrentFrame.SetPose(mVelocity * mLastFrame.GetPose());
++        }
+     }
+ 
+ 
+ 
+ 
++
+     fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
+ 
+-    // Project points seen in previous frame
++
+     int th;
+ 
+     if(mSensor==System::STEREO)
+@@ -2885,7 +3149,7 @@
+ 
+     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR);
+ 
+-    // If few matches, uses a wider window search
++
+     if(nmatches<20)
+     {
+         Verbose::PrintMess("Not enough matches, wider window search!!", Verbose::VERBOSITY_NORMAL);
+@@ -2905,10 +3169,10 @@
+             return false;
+     }
+ 
+-    // Optimize frame pose with all matches
++
+     Optimizer::PoseOptimization(&mCurrentFrame);
+ 
+-    // Discard outliers
++
+     int nmatchesMap = 0;
+     for(int i =0; i<mCurrentFrame.N; i++)
+     {
+@@ -2949,14 +3213,13 @@
+ bool Tracking::TrackLocalMap()
+ {
+ 
+-    // We have an estimation of the camera pose and some map points tracked in the frame.
+-    // We retrieve the local map and try to find matches to points in the local map.
++
+     mTrackedFr++;
+ 
+     UpdateLocalMap();
+     SearchLocalPoints();
+ 
+-    // TOO check outliers before PO
++
+     int aux1 = 0, aux2=0;
+     for(int i=0; i<mCurrentFrame.N; i++)
+         if( mCurrentFrame.mvpMapPoints[i])
+
+########## baseline -> LK ##########
+--- baseline
++++ LK
+@@ -559,8 +559,13 @@
+ #endif
+ 
+ 
+-}
+ 
++    PrintLKStats();
++}
++void System::PrintLKStats()
++{
++    mpTracker->PrintLKStats();
++}
+ bool System::isShutDown() {
+     unique_lock<mutex> lock(mMutexReset);
+     return mbShutDown;
+
+########## baseline -> LK ##########
+--- baseline
++++ LK
+@@ -58,6 +58,7 @@
+ 
+ public:
+     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
++    void PrintLKStats();
+     Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Atlas* pAtlas,
+              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq=std::string());
+ 
+@@ -354,8 +355,24 @@
+     int initID, lastID;
+ 
+     Sophus::SE3f mTlr;
+-
+     void newParameterLoader(Settings* settings);
++    // LK Optical Flow enhancement
++    cv::Mat mLastImGray;
++    std::vector<cv::Point2f> mLastKPs;
++    // LK success rate statistics
++    int mnLKFrames = 0;
++    int mnLKAttempts = 0;
++    int mnLKUsed =0;
++    int mnLKTrackedSum =0;
++
++    // Rotation deviation statistics (LK vs motion model)
++    std::vector<float> mvLKRotDevAdopted;   // degrees, pose accepted
++    std::vector<float> mvLKRotDevRejected;  // degrees, pose rejected
++    std::vector<float> mvLKTransDevAdopted;  // meters, pose accepted
++    std::vector<float> mvLKTransDevRejected; // meters, pose rejected
++
++    // Per-frame tracking time statistics (ms)
++    std::vector<float> mvTrackTimesMs;
+ 
+ #ifdef REGISTER_LOOP
+     bool Stop();
+
+########## baseline -> LK ##########
+--- baseline
++++ LK
+@@ -138,6 +138,7 @@
+     // It waits until all threads have finished.
+     // This function must be called before saving the trajectory.
+     void Shutdown();
++    void PrintLKStats();
+     bool isShutDown();
+ 
+     // Save camera trajectory in the TUM RGB-D dataset format.
+
+########## baseline -> LK ##########
+--- baseline
++++ LK
+@@ -124,6 +124,7 @@
+             usleep((T-ttrack)*1e6);
+     }
+ 
++    SLAM.PrintLKStats();
+     // Stop all threads
+     SLAM.Shutdown();
+ 

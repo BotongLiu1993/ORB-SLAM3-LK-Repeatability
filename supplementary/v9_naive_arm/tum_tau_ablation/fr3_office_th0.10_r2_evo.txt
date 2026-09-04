@@ -1,0 +1,13 @@
+APE w.r.t. translation part (m)
+(with SE(3) Umeyama alignment)
+
+       max	0.032697
+      mean	0.008925
+    median	0.008719
+       min	0.000468
+      rmse	0.009756
+       sse	0.236617
+       std	0.003939
+
+[WARNING] results/tum_experiments/ablation/fr3_office_th0.10_r2_evo.zip exists, overwrite?
+enter 'y' to overwrite or any other key to cancel

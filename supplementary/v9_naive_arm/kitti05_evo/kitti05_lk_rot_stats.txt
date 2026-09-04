@@ -1,0 +1,7 @@
+====== LK Rotation Deviation (LK vs MM) ======
+adopted samples: 1533  rejected samples: 1226
+adopted rot dev: mean 0.136908 med 0.118249 max 0.602944 p95 0.298227 deg
+rejected rot dev: mean 0.331879 med 0.217647 max 26.507 p95 0.532049 deg
+adopted trans dev: mean 0.207186 med 0.213483 max 0.399579 m
+rejected trans dev: mean 1.09157 med 0.694119 max 87.5039 m
+====================================================

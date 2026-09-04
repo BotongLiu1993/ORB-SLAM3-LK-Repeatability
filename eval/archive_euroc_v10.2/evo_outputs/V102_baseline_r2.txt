@@ -1,0 +1,13 @@
+APE w.r.t. translation part (m)
+(with SE(3) Umeyama alignment)
+
+       max      0.424507
+      mean      0.029827
+    median      0.022544
+       min      0.001384
+      rmse      0.042221
+       sse      2.978763
+       std      0.029882
+
+matched frames: 1671 (direct timestamp matching, tol 0.03 s)
+est/GT path-length ratio: 1.019

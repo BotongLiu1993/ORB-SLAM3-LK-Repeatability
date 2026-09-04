@@ -1,0 +1,21 @@
+seq,method,run,value,event_type,note
+fr1_desk,baseline,r4,0.0378,degraded (ATE > 0.03 m),fast-motion failure episode
+fr1_desk,baseline,r9,0.0527,degraded (ATE > 0.03 m),fast-motion failure episode
+fr1_desk2,baseline,r8,0.0316,marginal (ATE > 0.03 m),single marginal run
+fr1_desk2,v2,r8,0.0311,marginal (ATE > 0.03 m),single marginal run
+fr1_floor,baseline,r2,0.5072,degraded (ATE > 0.3 m),post-recovery drift
+fr1_floor,baseline,r3,0.9038,degraded (ATE > 0.3 m),trajectory drift (path 17.7 m vs GT 14.1 m)
+fr1_floor,baseline,r4,0.4341,degraded (ATE > 0.3 m),post-recovery drift
+fr1_floor,baseline,r6,0.5068,degraded (ATE > 0.3 m),post-recovery drift
+fr1_floor,baseline,r9,0.3165,degraded (ATE > 0.3 m),post-recovery drift
+fr1_floor,baseline,r10,0.7262,degraded (ATE > 0.3 m),post-recovery drift
+fr1_floor,baseline,r11,0.9170,degraded (ATE > 0.3 m),post-recovery drift
+fr1_floor,v2,r4,0.7601,degraded (ATE > 0.3 m),same difficult segment as baseline r4
+fr1_floor,v2,r6,0.5601,degraded (ATE > 0.3 m),same difficult segment as baseline r6
+fr1_floor,v2,r11,0.7377,degraded (ATE > 0.3 m),same difficult segment as baseline r11
+fr1_floor,baseline,r1/r2/r3,3/2/2 events,relocalization,log 'Relocalized' counts
+fr1_floor,v2,r1/r2/r3,2/2/2 events,relocalization,almost same frames as baseline
+KITTI 05,v2,r1,0.8868 mean,single-run outlier,05 -46.9% driven by one v2 run
+KITTI 09,v2,r1,2.4045 mean,single-run outlier,09 +20.3% driven by one v2 run
+KITTI 00 (v9 naive),naive LK,r1-r3,+15.7%,outdoor degradation (ns),v9 baseline arm; unified perm p=0.75
+TUM fr1_desk (v9 naive),naive LK,tau=0.20,ATE 5.21 m,silent divergence,recurred 2/5; v2 fallback eliminates it

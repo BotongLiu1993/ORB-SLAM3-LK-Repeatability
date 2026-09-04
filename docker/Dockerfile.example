@@ -1,0 +1,22 @@
+# Example Dockerfile for reproducing the ORB-SLAM3 + LK-v2 build.
+# NOTE: this container was NOT used to produce the paper's numbers (the study ran
+# natively in WSL, Ubuntu 20.04, 12 cores). It is provided as an optional,
+# unvalidated starting point for reviewers who want a clean build environment.
+FROM ubuntu:20.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake git pkg-config wget unzip \
+    libeigen3-dev libboost-all-dev libopencv-dev libglew-dev \
+    libssl-dev libgoogle-glog-dev libatlas-base-dev \
+    python3 python3-pip && rm -rf /var/lib/apt/lists/*
+# Pangolin (required by ORB-SLAM3 Viewer; also buildable headless with
+# BUILD_EXAMPLES=OFF and DISPLAY unset)
+RUN git clone --depth 1 https://github.com/stevenlovegrove/Pangolin \
+    && cd Pangolin && mkdir build && cd build \
+    && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF \
+    && make -j$(nproc) && make install && ldconfig
+COPY . /root/ORB_SLAM3
+WORKDIR /root/ORB_SLAM3
+# Build only the example binaries used in the paper
+RUN chmod +x build.sh && ./build.sh
+CMD ["/bin/bash"]

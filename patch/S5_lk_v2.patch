@@ -1,0 +1,649 @@
+diff --git a/include/Tracking.h b/include/Tracking.h
+index 863c98e..8963d2b 100644
+--- a/include/Tracking.h
++++ b/include/Tracking.h
+@@ -58,6 +58,7 @@ class Tracking
+ 
+ public:
+     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
++    void PrintLKStats();
+     Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Atlas* pAtlas,
+              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq=std::string());
+ 
+@@ -355,6 +356,30 @@ protected:
+ 
+     Sophus::SE3f mTlr;
+ 
++    // LK Optical Flow enhancement (v2: competing hypotheses)
++    cv::Mat mLastImGray;
++    std::vector<cv::Point2f> mLastKPs;
++    std::vector<float> mLastResponses;
++    // LK statistics
++    int mnLKFrames = 0;
++    int mnLKAttempts = 0;
++    int mnLKUsed = 0;
++    int mnLKTrackedSum = 0;
++    int mnLKWeakFrames = 0;
++    int mnMMWin = 0;
++    int mnLKFallback = 0;
++    int mnLKFBRejected = 0;
++    int mnLKNCCRejected = 0;
++    std::vector<float> mvFbErrAccepted;
++    std::vector<float> mvLKMatchMargin;
++    // Deviation statistics (LK vs motion model)
++    std::vector<float> mvLKRotDevAdopted;
++    std::vector<float> mvLKRotDevRejected;
++    std::vector<float> mvLKTransDevAdopted;
++    std::vector<float> mvLKTransDevRejected;
++    // Per-frame tracking time statistics (ms)
++    std::vector<float> mvTrackTimesMs;
++
+     void newParameterLoader(Settings* settings);
+ 
+ #ifdef REGISTER_LOOP
+diff --git a/src/Tracking.cc b/src/Tracking.cc
+index 5191451..f4fbad1 100644
+--- a/src/Tracking.cc
++++ b/src/Tracking.cc
+@@ -33,6 +33,13 @@
+ 
+ #include <mutex>
+ #include <chrono>
++#include <fstream>
++#include <algorithm>
++#include <cstdlib>
++#include <cmath>
++#include <opencv2/video/tracking.hpp>
++#include <opencv2/core/eigen.hpp>
++#include <opencv2/imgproc.hpp>
+ 
+ 
+ using namespace std;
+@@ -40,6 +47,38 @@ using namespace std;
+ namespace ORB_SLAM3
+ {
+ 
++// ============================================================================
++// LK-v2: normalized cross-correlation of a (2r+1)x(2r+1) patch around p in im1
++// and q in im2. Lightweight appearance check on top of the forward-backward
++// consistency test.
++// ============================================================================
++static float LK_NCC_Patch(const cv::Mat& im1, const cv::Mat& im2,
++                          const cv::Point2f& p, const cv::Point2f& q, int r = 4)
++{
++    const int s = 2*r + 1;
++    cv::Mat_<float> A(s, s), B(s, s);
++    const int x1c = (int)std::lround(p.x), y1c = (int)std::lround(p.y);
++    const int x2c = (int)std::lround(q.x), y2c = (int)std::lround(q.y);
++    for(int dy = -r; dy <= r; dy++)
++    {
++        for(int dx = -r; dx <= r; dx++)
++        {
++            const int x1 = x1c + dx, y1 = y1c + dy;
++            const int x2 = x2c + dx, y2 = y2c + dy;
++            A(dy+r, dx+r) = (x1 >= 0 && y1 >= 0 && x1 < im1.cols && y1 < im1.rows)
++                                ? (float)im1.at<uchar>(y1, x1) : 0.0f;
++            B(dy+r, dx+r) = (x2 >= 0 && y2 >= 0 && x2 < im2.cols && y2 < im2.rows)
++                                ? (float)im2.at<uchar>(y2, x2) : 0.0f;
++        }
++    }
++    cv::Scalar mA = cv::mean(A), mB = cv::mean(B);
++    cv::Mat dA = A - mA[0];
++    cv::Mat dB = B - mB[0];
++    double num = dA.dot(dB);
++    double den = cv::norm(dA, cv::NORM_L2) * cv::norm(dB, cv::NORM_L2);
++    return (den > 1e-9) ? (float)(num / den) : -1.0f;
++}
++
+ 
+ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Atlas *pAtlas, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq):
+     mState(NO_IMAGES_YET), mSensor(sensor), mTrackedFr(0), mbStep(false),
+@@ -526,10 +565,137 @@ void Tracking::PrintTimeStats()
+ 
+ #endif
+ 
++// ============================================================================
++// LK-v2 statistics (adoption, weak-MM triggers, FB/NCC rejections, deviations,
++// per-frame timing). Called once from the destructor at shutdown; the timing
++// section always runs, the LK-specific counters only when LK was exercised.
++// ============================================================================
++void Tracking::PrintLKStats()
++{
++    if(mnLKFrames > 0)
++    {
++
++    cout << endl << "====== LK Tracking Statistics ======" << endl;
++    cout << "Total frames:          " << mnLKFrames << endl;
++    cout << "LK attempts:           " << mnLKAttempts
++         << " (" << (100.0*mnLKAttempts/mnLKFrames) << "% of frames)" << endl;
++    cout << "LK pose used:          " << mnLKUsed
++         << " (" << (100.0*mnLKUsed/mnLKFrames) << "% of frames)" << endl;
++    if(mnLKAttempts > 0)
++        cout << "LK success rate:       "
++             << (100.0*mnLKUsed/mnLKAttempts) << "% (of attempts)" << endl;
++    if(mnLKUsed > 0)
++        cout << "Avg tracked points:    "
++             << (float)mnLKTrackedSum/mnLKUsed << endl;
++    cout << "LK weak-MM triggers:   " << mnLKWeakFrames
++         << " (" << (100.0*mnLKWeakFrames/mnLKFrames) << "% of frames)" << endl;
++    cout << "LK adopted (won):      " << mnLKUsed
++         << "   MM kept (weak):     " << mnMMWin << endl;
++    cout << "LK post-opt fallbacks: " << mnLKFallback << endl;
++    cout << "FB rejected points:    " << mnLKFBRejected << endl;
++    cout << "NCC rejected points:   " << mnLKNCCRejected << endl;
++    if(!mvLKMatchMargin.empty())
++    {
++        std::vector<float> v = mvLKMatchMargin;
++        std::sort(v.begin(), v.end());
++        float sum = 0;
++        for(float x : v) sum += x;
++        cout << "LK match margin:       mean " << (sum/v.size())
++             << " med " << v[v.size()/2] << " min " << v.front()
++             << " max " << v.back() << " (matches, nLK-nMM)" << endl;
++    }
++    if(!mvFbErrAccepted.empty())
++    {
++        float sum = 0;
++        for(float x : mvFbErrAccepted) sum += x;
++        cout << "LK mean FB error:      " << (sum/mvFbErrAccepted.size())
++             << " px (mean over " << mvFbErrAccepted.size() << " accepted frames)" << endl;
++    }
++    cout << "====================================" << endl;
++
++    // Rotation/translation deviation statistics (LK vs motion model)
++    if(!mvLKRotDevAdopted.empty() || !mvLKRotDevRejected.empty())
++    {
++        cout << endl << "====== LK Rotation Deviation (LK vs MM) ======" << endl;
++        cout << "adopted samples: " << mvLKRotDevAdopted.size()
++             << "  rejected samples: " << mvLKRotDevRejected.size() << endl;
++        if(!mvLKRotDevAdopted.empty())
++        {
++            std::vector<float> v = mvLKRotDevAdopted;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "adopted rot dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back()
++                 << " p95 " << v[(int)(0.95*v.size())] << " deg" << endl;
++        }
++        if(!mvLKRotDevRejected.empty())
++        {
++            std::vector<float> v = mvLKRotDevRejected;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "rejected rot dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back()
++                 << " p95 " << v[(int)(0.95*v.size())] << " deg" << endl;
++        }
++        if(!mvLKTransDevAdopted.empty())
++        {
++            std::vector<float> v = mvLKTransDevAdopted;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "adopted trans dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back() << " m" << endl;
++        }
++        if(!mvLKTransDevRejected.empty())
++        {
++            std::vector<float> v = mvLKTransDevRejected;
++            std::sort(v.begin(), v.end());
++            float sum = 0;
++            for(float x : v) sum += x;
++            cout << "rejected trans dev: mean " << (sum/v.size())
++                 << " med " << v[v.size()/2] << " max " << v.back() << " m" << endl;
++        }
++        cout << "====================================================" << endl;
++    }
++    }
++
++    // Per-frame tracking time statistics
++    if(!mvTrackTimesMs.empty())
++    {
++        std::vector<float> v = mvTrackTimesMs;
++        std::sort(v.begin(), v.end());
++        float sum = 0;
++        for(float x : v) sum += x;
++        float mean = sum / v.size();
++        float var = 0;
++        for(float x : v) var += (x-mean)*(x-mean);
++        float stdv = sqrt(var / v.size());
++        cout << endl << "====== Tracking Time Statistics (ms) ======" << endl;
++        cout << "Frames:    " << v.size() << endl;
++        cout << "Mean:      " << mean << endl;
++        cout << "Median:    " << v[v.size()/2] << endl;
++        cout << "Std:       " << stdv << endl;
++        cout << "Min:       " << v.front() << endl;
++        cout << "Max:       " << v.back() << endl;
++        cout << "P95:       " << v[(int)(0.95*v.size())] << endl;
++        cout << "P99:       " << v[(int)(0.99*v.size())] << endl;
++        cout << "===========================================" << endl << endl;
++
++        // Save raw per-frame times for boxplots
++        ofstream fout("track_times_ms.txt");
++        for(float x : v) fout << x << endl;
++        fout.close();
++    }
++}
++
+ Tracking::~Tracking()
+ {
+     //f_track_stats.close();
+ 
++    // LK-v2: print adoption/validation/timing statistics once at shutdown.
++    PrintLKStats();
+ }
+ 
+ void Tracking::newParameterLoader(Settings *settings) {
+@@ -1510,9 +1676,27 @@ Sophus::SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat
+ #endif
+ 
+     //cout << "Tracking start" << endl;
++    std::chrono::steady_clock::time_point t_track0 = std::chrono::steady_clock::now();
+     Track();
++    std::chrono::steady_clock::time_point t_track1 = std::chrono::steady_clock::now();
++    mvTrackTimesMs.push_back(std::chrono::duration_cast<std::chrono::microseconds>(t_track1 - t_track0).count() / 1000.0f);
+     //cout << "Tracking end" << endl;
+ 
++    // LK-v2: cache grayscale image, undistorted keypoints and responses for the next frame
++    mImGray.copyTo(mLastImGray);
++    if(!mCurrentFrame.mvKeysUn.empty() && mCurrentFrame.mvKeysUn.size() == mCurrentFrame.mvKeys.size())
++    {
++        cv::KeyPoint::convert(mCurrentFrame.mvKeysUn, mLastKPs);
++        mLastResponses.resize(mCurrentFrame.mvKeys.size());
++        for(size_t i = 0; i < mCurrentFrame.mvKeys.size(); i++)
++            mLastResponses[i] = mCurrentFrame.mvKeys[i].response;
++    }
++    else
++    {
++        cv::KeyPoint::convert(mCurrentFrame.mvKeys, mLastKPs);
++        mLastResponses.clear();
++    }
++
+     return mCurrentFrame.GetPose();
+ }
+ 
+@@ -1556,8 +1740,27 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, co
+ #ifdef REGISTER_TIMES
+     vdORBExtract_ms.push_back(mCurrentFrame.mTimeORB_Ext);
+ #endif
+-
++    //cout << "Tracking start" << endl;
++    std::chrono::steady_clock::time_point t_track0 = std::chrono::steady_clock::now();
+     Track();
++    std::chrono::steady_clock::time_point t_track1 = std::chrono::steady_clock::now();
++    mvTrackTimesMs.push_back(std::chrono::duration_cast<std::chrono::microseconds>(t_track1 - t_track0).count() / 1000.0f);
++    //cout << "Tracking end" << endl;
++
++    // LK-v2: cache grayscale image, undistorted keypoints and responses for the next frame
++    mImGray.copyTo(mLastImGray);
++    if(!mCurrentFrame.mvKeysUn.empty() && mCurrentFrame.mvKeysUn.size() == mCurrentFrame.mvKeys.size())
++    {
++        cv::KeyPoint::convert(mCurrentFrame.mvKeysUn, mLastKPs);
++        mLastResponses.resize(mCurrentFrame.mvKeys.size());
++        for(size_t i = 0; i < mCurrentFrame.mvKeys.size(); i++)
++            mLastResponses[i] = mCurrentFrame.mvKeys[i].response;
++    }
++    else
++    {
++        cv::KeyPoint::convert(mCurrentFrame.mvKeys, mLastKPs);
++        mLastResponses.clear();
++    }
+ 
+     return mCurrentFrame.GetPose();
+ }
+@@ -1609,7 +1812,12 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
+ #endif
+ 
+     lastID = mCurrentFrame.mnId;
++    //cout << "Tracking start" << endl;
++    std::chrono::steady_clock::time_point t_track0 = std::chrono::steady_clock::now();
+     Track();
++    std::chrono::steady_clock::time_point t_track1 = std::chrono::steady_clock::now();
++    mvTrackTimesMs.push_back(std::chrono::duration_cast<std::chrono::microseconds>(t_track1 - t_track0).count() / 1000.0f);
++    //cout << "Tracking end" << endl;
+ 
+     return mCurrentFrame.GetPose();
+ }
+@@ -2859,25 +3067,29 @@ bool Tracking::TrackWithMotionModel()
+     // Create "visual odometry" points if in Localization Mode
+     UpdateLastFrame();
+ 
++    // IMU mode: the IMU prediction is authoritative; the LK competition is not applied.
+     if (mpAtlas->isImuInitialized() && (mCurrentFrame.mnId>mnLastRelocFrameId+mnFramesToResetIMU))
+     {
+-        // Predict state with IMU if it is initialized and it doesnt need reset
+         PredictStateIMU();
+         return true;
+     }
+-    else
+-    {
+-        mCurrentFrame.SetPose(mVelocity * mLastFrame.GetPose());
+-    }
+-
+-
++    mnLKFrames++;
+ 
++    // ==========================================================================
++    // LK-v2: competing motion hypotheses.
++    //   H1: constant-velocity motion model (ORB-SLAM3 baseline);
++    //   H2: verified LK optical-flow pose (forward-backward + NCC validated).
++    // H2 is computed only when H1 shows weak match evidence (nmatches < sMMTh),
++    // and is adopted only when it yields strictly more projection matches than H1.
++    // This guarantees no degradation in smooth-motion scenes, while rescuing the
++    // frames where the motion model fails (fast/aggressive motion).
++    // ==========================================================================
++    Sophus::SE3f TcwMM = mVelocity * mLastFrame.GetPose();
++    mCurrentFrame.SetPose(TcwMM);
+ 
+     fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
+ 
+-    // Project points seen in previous frame
+     int th;
+-
+     if(mSensor==System::STEREO)
+         th=7;
+     else
+@@ -2885,6 +3097,255 @@ bool Tracking::TrackWithMotionModel()
+ 
+     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR);
+ 
++    // LK-v2 tunables (environment variables, for ablation)
++    static int    sMaxLKPoints = -1;
++    static float  sFbTh   = -1.0f;
++    static float  sNccTh  = -1.0f;
++    static float  sPnpRep = -1.0f;
++    static int    sMMTh   = -1;
++    if(sMaxLKPoints < 0)
++    {
++        sMaxLKPoints = 400;
++        sFbTh   = 1.5f;
++        sNccTh  = 0.75f;
++        sPnpRep = 3.0f;
++        sMMTh   = 25;
++        const char* penv;
++        if((penv = getenv("LK_MAX_POINTS"))  && penv[0] != '\0') sMaxLKPoints = atoi(penv);
++        if((penv = getenv("LK_FB_TH"))       && penv[0] != '\0') sFbTh   = (float)atof(penv);
++        if((penv = getenv("LK_NCC_TH"))      && penv[0] != '\0') sNccTh  = (float)atof(penv);
++        if((penv = getenv("LK_PNP_REPROJ"))  && penv[0] != '\0') sPnpRep = (float)atof(penv);
++        if((penv = getenv("LK_MM_MATCH_TH")) && penv[0] != '\0') sMMTh   = atoi(penv);
++    }
++
++    bool bLKused = false;
++    bool bLKok = false;
++    Sophus::SE3f TcwLK;
++    const int nmatchesMM = nmatches;
++    std::vector<MapPoint*> vMMMatches;
++
++    if(nmatches < sMMTh && !mLastImGray.empty() && !mLastKPs.empty() && !mLastFrame.mvpMapPoints.empty())
++    {
++        mnLKWeakFrames++;
++        vMMMatches = mCurrentFrame.mvpMapPoints;   // keep H1 matches for rollback
++
++        // ---- gather 2D(prev) <-> 3D(world) pairs from the last frame ----
++        std::vector<cv::Point2f> ptsLast;
++        std::vector<cv::Point3f> pts3D;
++        std::vector<int> ptsResp;
++        for(size_t i = 0; i < mLastKPs.size() && i < mLastFrame.N; i++)
++        {
++            MapPoint* pMP = mLastFrame.mvpMapPoints[i];
++            if(pMP && !pMP->isBad())
++            {
++                Eigen::Vector3f Pw = pMP->GetWorldPos();
++                ptsLast.push_back(mLastKPs[i]);
++                pts3D.push_back(cv::Point3f(Pw(0), Pw(1), Pw(2)));
++                ptsResp.push_back((i < mLastResponses.size())
++                                      ? (int)(mLastResponses[i] * 1000.0f) : 0);
++            }
++        }
++
++        // ---- keep only the strongest sMaxLKPoints candidates ----
++        if((int)ptsLast.size() > sMaxLKPoints)
++        {
++            std::vector<int> idx(ptsLast.size());
++            for(size_t i = 0; i < idx.size(); i++) idx[i] = (int)i;
++            std::partial_sort(idx.begin(), idx.begin() + sMaxLKPoints, idx.end(),
++                              [&](int a, int b){ return ptsResp[a] > ptsResp[b]; });
++            std::vector<cv::Point2f> ptsLastT;
++            std::vector<cv::Point3f> pts3DT;
++            ptsLastT.reserve(sMaxLKPoints);
++            pts3DT.reserve(sMaxLKPoints);
++            for(int k = 0; k < sMaxLKPoints; k++)
++            {
++                ptsLastT.push_back(ptsLast[idx[k]]);
++                pts3DT.push_back(pts3D[idx[k]]);
++            }
++            ptsLast.swap(ptsLastT);
++            pts3D.swap(pts3DT);
++        }
++
++        if((int)ptsLast.size() > 15)
++        {
++            mnLKAttempts++;
++
++            // ---- run LK on the undistorted image so that the flow coordinates are
++            //      consistent with the undistorted keypoints (mvKeysUn) ----
++            cv::Mat lastImg, curImg;
++            if(!mDistCoef.empty() && cv::countNonZero(mDistCoef) > 0)
++            {
++                cv::undistort(mLastImGray, lastImg, mK, mDistCoef);
++                cv::undistort(mImGray, curImg, mK, mDistCoef);
++            }
++            else
++            {
++                lastImg = mLastImGray;
++                curImg = mImGray;
++            }
++
++            // ---- initialise the LK search with the motion-model prediction ----
++            Eigen::Matrix3f Kmat;
++            cv::cv2eigen(mK, Kmat);
++            std::vector<cv::Point2f> initCurr(ptsLast.size());
++            for(size_t i = 0; i < ptsLast.size(); i++)
++            {
++                Eigen::Vector3f pc = TcwMM * Eigen::Vector3f(pts3D[i].x, pts3D[i].y, pts3D[i].z);
++                if(pc(2) > 0.1f)
++                {
++                    Eigen::Vector3f pn = Kmat * pc;
++                    initCurr[i] = cv::Point2f((float)(pn(0)/pn(2)), (float)(pn(1)/pn(2)));
++                }
++                else
++                {
++                    initCurr[i] = ptsLast[i];
++                }
++            }
++
++            std::vector<cv::Point2f> ptsCurr = initCurr;  // motion-model prediction as the LK initial guess
++            std::vector<uchar> status;
++            std::vector<float> err;
++            cv::calcOpticalFlowPyrLK(lastImg, curImg, ptsLast, ptsCurr, status, err,
++                                     cv::Size(11,11), 4,
++                                     cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 0.01),
++                                     cv::OPTFLOW_USE_INITIAL_FLOW);
++
++            // ---- forward-backward consistency check ----
++            std::vector<cv::Point2f> goodPtsCurr;
++            std::vector<cv::Point3f> goodPts3D;
++            std::vector<int> goodIdx;
++            {
++                std::vector<cv::Point2f> fwdPts;
++                std::vector<int> fwdIdx;
++                for(size_t i = 0; i < status.size(); i++)
++                {
++                    if(status[i])
++                    {
++                        fwdPts.push_back(ptsCurr[i]);
++                        fwdIdx.push_back((int)i);
++                    }
++                }
++                if(!fwdPts.empty())
++                {
++                    std::vector<cv::Point2f> backPts;
++                    std::vector<uchar> statusBack;
++                    std::vector<float> errBack;
++                    cv::calcOpticalFlowPyrLK(curImg, lastImg, fwdPts, backPts, statusBack, errBack,
++                                             cv::Size(11,11), 4,
++                                             cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 0.01));
++                    float fbAcc = 0.0f;
++                    for(size_t i = 0; i < backPts.size(); i++)
++                    {
++                        float fbErr = cv::norm(backPts[i] - ptsLast[fwdIdx[i]]);
++                        if(statusBack[i] && fbErr < sFbTh)
++                        {
++                            goodPtsCurr.push_back(fwdPts[i]);
++                            goodPts3D.push_back(pts3D[fwdIdx[i]]);
++                            goodIdx.push_back(fwdIdx[i]);
++                            fbAcc += fbErr;
++                        }
++                        else
++                        {
++                            mnLKFBRejected++;
++                        }
++                    }
++                    if(!goodPtsCurr.empty())
++                        mvFbErrAccepted.push_back(fbAcc / (float)goodPtsCurr.size());
++                }
++            }
++
++            // ---- NCC appearance check (set LK_NCC_TH<=0 to disable) ----
++            if(sNccTh > 0.0f && goodPtsCurr.size() > 5)
++            {
++                std::vector<cv::Point2f> nccCurr;
++                std::vector<cv::Point3f> ncc3D;
++                std::vector<int> nccIdx;
++                nccCurr.reserve(goodPtsCurr.size());
++                ncc3D.reserve(goodPtsCurr.size());
++                nccIdx.reserve(goodPtsCurr.size());
++                for(size_t i = 0; i < goodPtsCurr.size(); i++)
++                {
++                    float sim = LK_NCC_Patch(lastImg, curImg, ptsLast[goodIdx[i]], goodPtsCurr[i]);
++                    if(sim >= sNccTh)
++                    {
++                        nccCurr.push_back(goodPtsCurr[i]);
++                        ncc3D.push_back(goodPts3D[i]);
++                        nccIdx.push_back(goodIdx[i]);
++                    }
++                    else
++                    {
++                        mnLKNCCRejected++;
++                    }
++                }
++                goodPtsCurr.swap(nccCurr);
++                goodPts3D.swap(ncc3D);
++                goodIdx.swap(nccIdx);
++            }
++
++            // ---- PnP on the verified correspondences (undistorted coordinates) ----
++            if((int)goodPtsCurr.size() > 15)
++            {
++                cv::Mat R_cv, t_cv, inliers;
++                bool bPnP = cv::solvePnPRansac(goodPts3D, goodPtsCurr, mK, cv::Mat(),
++                                               R_cv, t_cv, false, 200, sPnpRep, 0.99, inliers, cv::SOLVEPNP_EPNP);
++                if(bPnP && inliers.rows > 15)
++                {
++                    cv::Mat R_mat;
++                    cv::Rodrigues(R_cv, R_mat);
++                    Eigen::Matrix3f Re;
++                    cv::cv2eigen(R_mat, Re);
++                    Eigen::Vector3f te;
++                    cv::cv2eigen(t_cv, te);
++                    TcwLK = Sophus::SE3f(Re, te);
++                    bLKok = true;
++                }
++            }
++
++            // ---- competitive selection: re-project with the LK pose ----
++            if(bLKok)
++            {
++                mCurrentFrame.SetPose(TcwLK);
++                fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
++                int nmatchesLK = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR);
++
++                Eigen::Vector3f transLK = TcwLK.translation();
++                Eigen::Vector3f transMM = TcwMM.translation();
++                float dist = (transLK - transMM).norm();
++                Eigen::Matrix3f Rrel = TcwMM.rotationMatrix().transpose() * TcwLK.rotationMatrix();
++                float rotDev = Sophus::SO3f(Rrel).log().norm() * 180.0f / 3.14159265358979f;
++
++                if(nmatchesLK > nmatchesMM)
++                {
++                    bLKused = true;
++                    nmatches = nmatchesLK;
++                    mnLKUsed++;
++                    mnLKTrackedSum += (int)goodPtsCurr.size();
++                    mvLKMatchMargin.push_back((float)(nmatchesLK - nmatchesMM));
++                    mvLKRotDevAdopted.push_back(rotDev);
++                    mvLKTransDevAdopted.push_back(dist);
++                }
++                else
++                {
++                    mnMMWin++;
++                    // roll back to the motion-model hypothesis
++                    mCurrentFrame.SetPose(TcwMM);
++                    mCurrentFrame.mvpMapPoints = vMMMatches;
++                    nmatches = nmatchesMM;
++                    mvLKRotDevRejected.push_back(rotDev);
++                    mvLKTransDevRejected.push_back(dist);
++                }
++            }
++            else
++            {
++                mnMMWin++;
++            }
++        }
++        else
++        {
++            mnMMWin++;
++        }
++    }
++
+     // If few matches, uses a wider window search
+     if(nmatches<20)
+     {
+@@ -2934,6 +3395,45 @@ bool Tracking::TrackWithMotionModel()
+         }
+     }
+ 
++    // ==========================================================================
++    // LK-v2: post-acceptance verification. If the LK-seeded optimization
++    // collapsed (silent-divergence guard), retry with the motion-model seed.
++    // ==========================================================================
++    if(bLKused && nmatchesMap < 10 && nmatchesMM >= 15)
++    {
++        Verbose::PrintMess("LK post-opt inlier drop, retrying motion-model seed", Verbose::VERBOSITY_NORMAL);
++        mnLKFallback++;
++        mCurrentFrame.SetPose(TcwMM);
++        mCurrentFrame.mvpMapPoints = vMMMatches;
++        Optimizer::PoseOptimization(&mCurrentFrame);
++
++        nmatches = nmatchesMM;
++        nmatchesMap = 0;
++        for(int i =0; i<mCurrentFrame.N; i++)
++        {
++            if(mCurrentFrame.mvpMapPoints[i])
++            {
++                if(mCurrentFrame.mvbOutlier[i])
++                {
++                    MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
++                    mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
++                    mCurrentFrame.mvbOutlier[i]=false;
++                    if(i < mCurrentFrame.Nleft)
++                        pMP->mbTrackInView = false;
++                    else
++                        pMP->mbTrackInViewR = false;
++                    pMP->mnLastFrameSeen = mCurrentFrame.mnId;
++                    nmatches--;
++                }
++                else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
++                {
++                    nmatchesMap++;
++                }
++            }
++        }
++        bLKused = false;
++    }
++
+     if(mbOnlyTracking)
+     {
+         mbVO = nmatchesMap<10;

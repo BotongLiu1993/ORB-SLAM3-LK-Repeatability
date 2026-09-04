@@ -1,0 +1,5 @@
+pooled mean ATE RMSE (m) + two-sided paired permutation p (statistic = |mean(v-b)|, 2^n)
+
+V101: base=0.0438 v2=0.0359 d=-0.0079 (-18.1%) p=0.500 (n=3)
+V102: base=0.0385 v2=0.0401 d=0.0017 (4.3%) p=1.000 (n=3)
+V103: base=0.1648 v2=0.0936 d=-0.0712 (-43.2%) p=0.250 (n=3)

@@ -1,0 +1,7 @@
+run,method,ate_m,source
+1,base,1.1979,raw evo file: results/kitti00_baseline_r1_evo_summary.txt
+2,base,1.1622,raw evo file: results/kitti00_baseline_r2_evo_summary.txt
+3,base,1.6262,raw evo file: results/kitti00_baseline_r3_evo_summary.txt
+1,lk,1.2156,raw evo file: results/kitti00_lk_r1_evo_summary.txt
+2,lk,2.1062,raw evo file: results/kitti00_lk_r2_evo_summary.txt
+3,lk,1.2916,raw evo file: results/kitti00_lk_r3_evo_summary.txt

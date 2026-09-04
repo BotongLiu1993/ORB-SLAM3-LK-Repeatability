@@ -1,0 +1,7 @@
+====== LK Tracking Statistics ======
+Total frames:          2759
+LK attempts:           2759 (100%)
+LK pose used:          1533 (55.5636% of frames)
+LK success rate:       55.5636% (of attempts)
+Avg tracked points:    453.207
+====================================

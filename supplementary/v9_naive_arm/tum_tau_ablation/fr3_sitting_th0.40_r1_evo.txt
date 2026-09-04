@@ -1,0 +1,28 @@
+APE w.r.t. translation part (m)
+(with SE(3) Umeyama alignment)
+
+       max	0.052424
+      mean	0.007760
+    median	0.007160
+       min	0.001020
+      rmse	0.008957
+       sse	0.097562
+       std	0.004475
+
+[WARNING] results/tum_experiments/ablation/fr3_sitting_th0.40_r1_evo.zip exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+[ERROR] Unhandled error in evo.main_ape
+Traceback (most recent call last):
+  File "/home/liubot/.local/lib/python3.8/site-packages/evo/entry_points.py", line 95, in launch
+    main_module.run(args)
+  File "/home/liubot/.local/lib/python3.8/site-packages/evo/main_ape.py", line 172, in run
+    file_interface.save_res_file(args.save_results, result,
+  File "/home/liubot/.local/lib/python3.8/site-packages/evo/tools/file_interface.py", line 414, in save_res_file
+    if confirm_overwrite and not user.check_and_confirm_overwrite(
+  File "/home/liubot/.local/lib/python3.8/site-packages/evo/tools/user.py", line 44, in check_and_confirm_overwrite
+    return confirm("enter 'y' to overwrite or any other key to cancel")
+  File "/home/liubot/.local/lib/python3.8/site-packages/evo/tools/user.py", line 35, in confirm
+    if input(msg + "\n") != key:
+OSError: [Errno 9] Bad file descriptor
+
+[ERROR] evo module evo.main_ape crashed - no logfile written (disabled)

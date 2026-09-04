@@ -1,0 +1,153 @@
+domain,group,sequence,method,threshold,run,ate,unit,lk_used_frames,lk_used_pct,avg_tracked_points
+TUM,a1_fr1desk,a1_fr1desk,lk_adaptive,adaptive (init 0.40),1,1.7175,cm,563,98.5989,344.2
+TUM,a1_fr1desk,a1_fr1desk,lk_adaptive,adaptive (init 0.40),2,1.6788,cm,563,98.5989,341.7
+TUM,a1_fr1desk,a1_fr1desk,lk_adaptive,adaptive (init 0.40),3,1.7017,cm,562,98.4238,354.1
+TUM,a1_fr1desk,a1_fr1desk,lk_adaptive,adaptive (init 0.40),4,1.7601,cm,562,98.4238,339.9
+TUM,a1_fr1desk,a1_fr1desk,lk_adaptive,adaptive (init 0.40),5,1.8704,cm,559,97.8984,340.0
+TUM,a1_office,a1_office,lk_adaptive,adaptive (init 0.40),1,0.8814,cm,2472,99.4368,390.2
+TUM,a1_office,a1_office,lk_adaptive,adaptive (init 0.40),2,1.1069,cm,2474,99.5173,387.5
+TUM,a1_office,a1_office,lk_adaptive,adaptive (init 0.40),3,1.0118,cm,2470,99.3564,384.3
+TUM,a1_sitting,a1_sitting,lk_adaptive,adaptive (init 0.40),1,0.9458,cm,1216,99.9178,293.1
+TUM,a1_sitting,a1_sitting,lk_adaptive,adaptive (init 0.40),2,0.9636,cm,1209,99.3426,281.1
+TUM,a1_sitting,a1_sitting,lk_adaptive,adaptive (init 0.40),3,0.9231,cm,1215,99.8357,288.4
+KITTI,a2_kitti05,a2_kitti05,lk_adaptive,0.20 pinned,1,9.7553,m,817,29.6122,453.7
+KITTI,a2_kitti05,a2_kitti05,lk_adaptive,0.20 pinned,2,18.2145,m,810,29.4011,451.0
+KITTI,a2_kitti05,a2_kitti05,lk_adaptive,0.20 pinned,3,1.3629,m,757,27.4375,455.4
+KITTI,a2_kitti05,a2_kitti05,lk_adaptive,0.20 pinned,4,1.0018,m,779,28.2349,463.8
+KITTI,a2_kitti05,a2_kitti05,lk_adaptive,0.20 pinned,5,1.1045,m,773,28.0174,445.8
+KITTI,a3_kitti05,a3_kitti05,lk_adaptive,adaptive (default),1,0.9914,m,2367,85.7920,438.2
+KITTI,a3_kitti05,a3_kitti05,lk_adaptive,adaptive (default),2,0.9433,m,2374,86.0457,440.3
+KITTI,a3_kitti05,a3_kitti05,lk_adaptive,adaptive (default),3,0.9858,m,2358,85.4657,443.9
+KITTI,a3_kitti05,a3_kitti05,lk_adaptive,adaptive (default),4,1.2926,m,2379,86.2269,443.7
+KITTI,a3_kitti05,a3_kitti05,lk_adaptive,adaptive (default),5,1.0068,m,2353,85.2845,437.9
+TUM,legacy_single_run,fr1_desk,base,,single,1.9118,cm,,,
+TUM,legacy_single_run,fr1_xyz,base,,single,1.1428,cm,,,
+TUM,legacy_single_run,fr2_desk,base,,single,2.0594,cm,,,
+TUM,legacy_single_run,fr2_xyz,base,,single,0.3982,cm,,,
+TUM,legacy_single_run,fr3_office,base,,single,0.9093,cm,,,
+TUM,legacy_single_run,fr3_sitting,base,,single,1.3508,cm,,,
+KITTI,kitti00_batch,KITTI 00,base,,1,1.1979,m,,,
+KITTI,kitti00_batch,KITTI 00,base,,2,1.1622,m,,,
+KITTI,kitti00_batch,KITTI 00,base,,3,1.6262,m,,,
+KITTI,kitti00_batch,KITTI 00,lk,,1,1.2156,m,1523,33.5536,469.584
+KITTI,kitti00_batch,KITTI 00,lk,,2,2.1062,m,1499,33.0249,467.316
+KITTI,kitti00_batch,KITTI 00,lk,,3,1.2916,m,1482,32.6504,470.661
+KITTI,kitti05_ablation,KITTI 05,lk,0.10,0,0.9320,m,336,12.1783,473.4
+KITTI,kitti05_ablation,KITTI 05,lk,0.10,1,0.9177,m,378,13.7006,485.6
+KITTI,kitti05_ablation,KITTI 05,lk,0.10,2,1.0914,m,372,13.4831,475.7
+KITTI,kitti05_ablation,KITTI 05,lk,0.10,3,0.8376,m,398,14.4255,475.1
+KITTI,kitti05_ablation,KITTI 05,lk,0.20,0,0.8573,m,771,27.9449,453.1
+KITTI,kitti05_ablation,KITTI 05,lk,0.20,1,0.9052,m,811,29.3947,458.7
+KITTI,kitti05_ablation,KITTI 05,lk,0.20,2,1.1153,m,790,28.6336,465.2
+KITTI,kitti05_ablation,KITTI 05,lk,0.20,3,5.2116,m,801,29.0323,461.9
+KITTI,kitti05_ablation,KITTI 05,lk,0.30,0,0.9189,m,1218,44.1464,456.6
+KITTI,kitti05_ablation,KITTI 05,lk,0.30,1,0.9662,m,1202,43.5665,447.6
+KITTI,kitti05_ablation,KITTI 05,lk,0.30,2,0.8881,m,1198,43.4215,456.6
+KITTI,kitti05_ablation,KITTI 05,lk,0.30,3,0.8456,m,1208,43.7840,461.1
+KITTI,kitti05_ablation,KITTI 05,lk,0.50,0,0.9883,m,1828,66.2559,450.6
+KITTI,kitti05_ablation,KITTI 05,lk,1.00,0,1.2835,m,2461,89.1990,441.3
+KITTI,kitti05_ablation,KITTI 05,lk,1.00,1,1.2844,m,2460,89.1627,442.1
+KITTI,kitti05_ablation,KITTI 05,lk,1.00,2,0.9217,m,2460,89.1627,438.3
+KITTI,kitti05_ablation,KITTI 05,lk,1.00,3,1.1737,m,2468,89.4527,442.4
+KITTI,kitti05_baseline,KITTI 05,base,,1,0.8897,m,,,
+KITTI,kitti05_baseline,KITTI 05,base,,2,0.9189,m,,,
+KITTI,kitti05_baseline,KITTI 05,base,,3,0.8759,m,,,
+KITTI,kitti05_ablation,KITTI 05,lk,0.40,1,0.9632,m,,,
+KITTI,kitti05_ablation,KITTI 05,lk,0.40,2,0.9439,m,,,
+KITTI,kitti05_ablation,KITTI 05,lk,0.40,3,0.9493,m,,,
+TUM,fr3_ablation,fr3_office,lk,0.10,1,0.9898,cm,2483,99.8793,386.7
+TUM,fr3_ablation,fr3_office,lk,0.10,2,0.9756,cm,2484,99.9195,388.7
+TUM,fr3_ablation,fr3_office,lk,0.10,3,1.4787,cm,2484,99.9195,387.2
+TUM,fr3_ablation,fr3_office,lk,0.20,1,1.1050,cm,2486,100.0000,389.7
+TUM,fr3_ablation,fr3_office,lk,0.20,2,1.4294,cm,2486,100.0000,388.2
+TUM,fr3_ablation,fr3_office,lk,0.20,3,1.0961,cm,2486,100.0000,386.7
+TUM,fr3_ablation,fr3_office,lk,0.30,1,1.2056,cm,2486,100.0000,392.2
+TUM,fr3_ablation,fr3_office,lk,0.30,2,1.3692,cm,2486,100.0000,391.0
+TUM,fr3_ablation,fr3_office,lk,0.30,3,1.0230,cm,2486,100.0000,390.2
+TUM,fr3_ablation,fr3_office,lk,0.40,1,0.9557,cm,2486,100.0000,386.2
+TUM,fr3_ablation,fr3_office,lk,0.40,2,1.6802,cm,2486,100.0000,387.6
+TUM,fr3_ablation,fr3_office,lk,0.40,3,1.0839,cm,2486,100.0000,386.4
+TUM,fr3_ablation,fr3_office,lk,0.50,1,1.2688,cm,2486,100.0000,388.5
+TUM,fr3_ablation,fr3_office,lk,0.50,2,1.0290,cm,2486,100.0000,390.7
+TUM,fr3_ablation,fr3_office,lk,0.50,3,1.0100,cm,2486,100.0000,390.4
+TUM,fr3_ablation,fr3_office,lk,1.00,1,0.9417,cm,2486,100.0000,387.8
+TUM,fr3_ablation,fr3_office,lk,1.00,2,1.1167,cm,2486,100.0000,389.3
+TUM,fr3_ablation,fr3_office,lk,1.00,3,1.0633,cm,2486,100.0000,391.0
+TUM,fr3_ablation,fr3_sitting,lk,0.10,1,0.9165,cm,1217,100.0000,278.6
+TUM,fr3_ablation,fr3_sitting,lk,0.10,2,0.9156,cm,1217,100.0000,297.3
+TUM,fr3_ablation,fr3_sitting,lk,0.10,3,0.9211,cm,1217,100.0000,283.3
+TUM,fr3_ablation,fr3_sitting,lk,0.20,1,0.9369,cm,1217,100.0000,288.3
+TUM,fr3_ablation,fr3_sitting,lk,0.20,2,0.9107,cm,1217,100.0000,284.9
+TUM,fr3_ablation,fr3_sitting,lk,0.20,3,0.9058,cm,1217,100.0000,280.4
+TUM,fr3_ablation,fr3_sitting,lk,0.30,1,0.9292,cm,1217,100.0000,279.6
+TUM,fr3_ablation,fr3_sitting,lk,0.30,2,0.9134,cm,1217,100.0000,288.9
+TUM,fr3_ablation,fr3_sitting,lk,0.30,3,0.9121,cm,1217,100.0000,292.5
+TUM,fr3_ablation,fr3_sitting,lk,0.40,1,0.8957,cm,1217,100.0000,281.6
+TUM,fr3_ablation,fr3_sitting,lk,0.40,2,0.9128,cm,1217,100.0000,284.6
+TUM,fr3_ablation,fr3_sitting,lk,0.40,3,0.9156,cm,1217,100.0000,280.4
+TUM,fr3_ablation,fr3_sitting,lk,0.50,1,0.9242,cm,1217,100.0000,288.8
+TUM,fr3_ablation,fr3_sitting,lk,0.50,2,0.9450,cm,1217,100.0000,286.7
+TUM,fr3_ablation,fr3_sitting,lk,0.50,3,0.9548,cm,1217,100.0000,284.6
+TUM,fr3_ablation,fr3_sitting,lk,1.00,1,0.9458,cm,1217,100.0000,285.2
+TUM,fr3_ablation,fr3_sitting,lk,1.00,2,0.9300,cm,1217,100.0000,288.5
+TUM,fr3_ablation,fr3_sitting,lk,1.00,3,0.9687,cm,1217,100.0000,282.9
+TUM,fr3_baseline,fr3_office,base,,1,1.2272,cm,,,
+TUM,fr3_baseline,fr3_office,base,,2,1.1087,cm,,,
+TUM,fr3_baseline,fr3_office,base,,3,1.0092,cm,,,
+TUM,fr3_baseline,fr3_sitting,base,,1,0.8884,cm,,,
+TUM,fr3_baseline,fr3_sitting,base,,2,0.9329,cm,,,
+TUM,fr3_baseline,fr3_sitting,base,,3,0.9741,cm,,,
+TUM,fr12,fr1_desk,base,,1,7.3081,cm,,,
+TUM,fr12,fr1_desk,base,,2,5.3298,cm,,,
+TUM,fr12,fr1_desk,base,,3,2.2510,cm,,,
+TUM,fr12,fr1_desk,lk,0.40,1,1.6434,cm,571,100.0000,347.8
+TUM,fr12,fr1_desk,lk,0.40,2,1.6964,cm,571,100.0000,340.8
+TUM,fr12,fr1_desk,lk,0.40,3,1.7182,cm,570,99.8249,343.0
+TUM,fr12,fr1_xyz,base,,1,1.0330,cm,,,
+TUM,fr12,fr1_xyz,base,,2,1.0533,cm,,,
+TUM,fr12,fr1_xyz,base,,3,1.0418,cm,,,
+TUM,fr12,fr1_xyz,lk,0.40,1,1.0597,cm,790,100.0000,375.6
+TUM,fr12,fr1_xyz,lk,0.40,2,1.0507,cm,790,100.0000,374.5
+TUM,fr12,fr1_xyz,lk,0.40,3,1.0111,cm,790,100.0000,374.8
+TUM,fr12,fr2_desk,base,,1,1.8425,cm,,,
+TUM,fr12,fr2_desk,base,,2,1.8741,cm,,,
+TUM,fr12,fr2_desk,base,,3,1.8804,cm,,,
+TUM,fr12,fr2_desk,lk,0.40,1,1.8459,cm,2891,100.0000,322.5
+TUM,fr12,fr2_desk,lk,0.40,2,2.0071,cm,2891,100.0000,318.0
+TUM,fr12,fr2_desk,lk,0.40,3,1.8790,cm,2891,100.0000,318.9
+TUM,fr12,fr2_xyz,base,,1,0.3808,cm,,,
+TUM,fr12,fr2_xyz,base,,2,0.3733,cm,,,
+TUM,fr12,fr2_xyz,base,,3,0.3836,cm,,,
+TUM,fr12,fr2_xyz,lk,0.40,1,0.3713,cm,3613,100.0000,334.2
+TUM,fr12,fr2_xyz,lk,0.40,2,0.3882,cm,3613,100.0000,335.3
+TUM,fr12,fr2_xyz,lk,0.40,3,0.3749,cm,3613,100.0000,333.8
+TUM,fr1desk_ext,fr1_desk,base,,10,1.7212,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,11,1.7990,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,12,2.9351,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,1,3.6165,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,2,1.7005,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,3,2.3786,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,4,1.7407,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,5,2.0689,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,6,1.7225,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,7,1.7286,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,8,2.3251,cm,,,
+TUM,fr1desk_ext,fr1_desk,base,,9,2.6892,cm,,,
+TUM,fr1desk_ext,fr1_desk,lk,0.40,10,1.6785,cm,570,99.8249,342.6
+TUM,fr1desk_ext,fr1_desk,lk,0.40,11,1.6887,cm,571,100.0000,343.9
+TUM,fr1desk_ext,fr1_desk,lk,0.40,12,1.6200,cm,570,99.8249,344.9
+TUM,fr1desk_ext,fr1_desk,lk,0.40,1,1.7084,cm,571,100.0000,345.5
+TUM,fr1desk_ext,fr1_desk,lk,0.40,2,1.6682,cm,570,99.8249,343.6
+TUM,fr1desk_ext,fr1_desk,lk,0.40,3,1.7192,cm,570,99.8249,341.2
+TUM,fr1desk_ext,fr1_desk,lk,0.40,4,1.6867,cm,571,100.0000,339.7
+TUM,fr1desk_ext,fr1_desk,lk,0.40,5,1.6705,cm,571,100.0000,348.4
+TUM,fr1desk_ext,fr1_desk,lk,0.40,6,1.7190,cm,571,100.0000,349.1
+TUM,fr1desk_ext,fr1_desk,lk,0.40,7,1.6434,cm,571,100.0000,345.8
+TUM,fr1desk_ext,fr1_desk,lk,0.40,8,1.6718,cm,571,100.0000,346.3
+TUM,fr1desk_ext,fr1_desk,lk,0.40,9,1.7267,cm,571,100.0000,341.8
+TUM,fr3_repeat,fr3_office,lk,0.40,1,1.0751,cm,2486,100.0000,388.6
+TUM,fr3_repeat,fr3_office,lk,0.40,2,1.0201,cm,2486,100.0000,389.0
+TUM,fr3_repeat,fr3_office,lk,0.40,3,1.0613,cm,2486,100.0000,386.1
+TUM,fr3_repeat,fr3_sitting,lk,0.40,1,0.9276,cm,1217,100.0000,291.3
+TUM,fr3_repeat,fr3_sitting,lk,0.40,2,0.9177,cm,1217,100.0000,287.5
+TUM,fr3_repeat,fr3_sitting,lk,0.40,3,0.9482,cm,1217,100.0000,277.3

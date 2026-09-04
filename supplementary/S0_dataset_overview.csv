@@ -1,0 +1,19 @@
+seq,benchmark,sensor,motion,n_per_method,batch,path_len_m,duration_s,path_source
+fr1_desk,TUM RGB-D,RGB-D,"Desktop scene, moderate-to-fast motion; motion-model failures",12,tum_experiments/v2_tum (2026-08-18/19),10.3,,baseline est.
+fr1_desk2,TUM RGB-D,RGB-D,"Desktop scene, faster rotation than fr1_desk",12,tum_experiments/v2_tum (2026-08-18/19),11.5,24.9,GT
+fr1_room,TUM RGB-D,RGB-D,"Room-scale, fast motion",3,tum_experiments/v2_tum (2026-08-18),19.9,,baseline est.
+fr1_360,TUM RGB-D,RGB-D,"Fast rotation, handheld",12,tum_experiments/v2_tum (2026-08-18/19),7.5,28.7,GT
+fr1_floor,TUM RGB-D,RGB-D,"Floor-level traversal, fast motion, frequent relocalization",12,tum_experiments/v2_tum (2026-08-18/19),14.1,49.9,GT
+fr2_xyz,TUM RGB-D,RGB-D,Smooth translation,3,tum_experiments/v2_tum (2026-08-18),10.2,,baseline est.
+fr2_desk,TUM RGB-D,RGB-D,Moderate office motion,3,tum_experiments/v2_tum (2026-08-18),21.8,,baseline est.
+fr3_sitting,TUM RGB-D,RGB-D,Semi-static scene with human motion,3,tum_experiments/v2_tum (2026-08-18),10.7,,baseline est.
+fr3_office,TUM RGB-D,RGB-D,Long office traversal,3,tum_experiments/v2_tum (2026-08-18),24.7,,baseline est.
+00,KITTI odometry,Stereo,"Outdoor driving, suburban",3,v2_kitti (2026-08-19),3708.7,,baseline est.
+02,KITTI odometry,Stereo,"Outdoor driving, turns + loop",3,v2_kitti (2026-08-19),5068.9,,baseline est.
+05,KITTI odometry,Stereo,"Outdoor driving, suburban",3,v2_kitti (2026-08-19),2236.7,,baseline est.
+07,KITTI odometry,Stereo,"Outdoor driving, suburban",3,v2_kitti (2026-08-19),694.2,,baseline est.
+09,KITTI odometry,Stereo,"Outdoor driving, urban",3,v2_kitti (2026-08-19),1713.8,,baseline est.
+10,KITTI odometry,Stereo,"Outdoor driving, suburban",3,v2_kitti (2026-08-19),918.8,,baseline est.
+V101,EuRoC MAV,Stereo,"MAV indoor, easy",3,v2_euroc (2026-08-18; ATE re-eval 2026-08-19),58.5,143.5,GT
+V102,EuRoC MAV,Stereo,"MAV indoor, medium",3,v2_euroc (2026-08-18; ATE re-eval 2026-08-19),75.5,83.5,GT
+V103,EuRoC MAV,Stereo,"MAV indoor, difficult",3,v2_euroc (2026-08-18; ATE re-eval 2026-08-19),79.3,104.6,GT

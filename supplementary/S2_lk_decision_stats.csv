@@ -1,0 +1,12 @@
+seq,trigger_pct_frames,adoption_pct_attempts,winning_margin_matches,fb_error_px,fb_rejects_per_run,ncc_rejects_per_run,fallback
+fr1_desk,23.8,51.2,+10.8,0.150,~1400,~1300,0
+fr1_desk2,40.1,43.4,+18.1,0.155,~3150,~2300,0
+fr1_room,26.3,34.6,,,,,<1%
+fr1_360,37.2,30.5,,,,,<1%
+fr1_floor,55.2,17.9,,,,,<1%
+fr2_xyz,0.5,22.2,,,,,0
+fr2_desk,12.1,22.4,,,,,0
+fr3_sitting,19.6,28.7,,,,,0
+fr3_office,0.7,38.5,,,,,0
+KITTI (6 seq),12.9-32.4,29.3-39.8,,0.05-0.08,,,0
+EuRoC V1_01-03,23.9-40.9,,,,,,<1%

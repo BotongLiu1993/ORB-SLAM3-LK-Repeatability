@@ -1,0 +1,28 @@
+# --- Build artifacts ---
+build/*
+!build/deploy_v2.sh
+*.o
+*.a
+*.so
+*.exe
+*.out
+
+# --- Python ---
+__pycache__/
+*.pyc
+
+# --- Logs ---
+logs/
+*.log
+
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Local ORB-SLAM3 tree / dataset data (not bundled in this repository) ---
+/ORB_SLAM3/
+/datasets/rgbd_dataset_*/
+/datasets/euroc/
+/datasets/kitti/
