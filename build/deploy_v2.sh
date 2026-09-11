@@ -1,66 +1,66 @@
 #!/usr/bin/env bash
 # =============================================================================
-# deploy_v2.sh - 部署 LK-v2 (竞争式运动先验) 到 ORB-SLAM3
+# deploy_v2.sh - deploy LK-v2 (competing-hypothesis motion prior) into ORB-SLAM3
 # =============================================================================
-# 用法:
-#   bash deploy_v2.sh [v2文件目录]
-#     - 默认从脚本所在目录找 Tracking_v2.cc / Tracking_v2.h
-#     - 例: bash deploy_v2.sh /mnt/d/0\ 科研学习/SLAM/result/scripts/lk_v2
-# 作用:
-#   1) 备份当前工作区代码为 *.bak_tum_v1 (若含 v1 标记)
-#   2) 用 git show HEAD 生成 baseline 备份 (code_backups_tum/*.baseline)
-#   3) 复制 v2 代码到 src/ include/
-#   4) 编译 rgbd_tum 与 stereo_kitti
-#   5) 自检 v2 标记
+# Usage:
+#   bash deploy_v2.sh [v2 files directory]
+#     - by default Tracking_v2.cc / Tracking_v2.h are taken from this script's directory
+#     - e.g. bash deploy_v2.sh /mnt/d/SLAM/result/scripts/lk_v2
+# What it does:
+#   1) back up the current working-tree code as *.bak_tum_v1 (if it carries the v1 marker)
+#   2) create baseline backups from git show HEAD (code_backups_tum/*.baseline)
+#   3) copy the v2 code into src/ and include/
+#   4) build rgbd_tum and stereo_kitti
+#   5) self-check the v2 markers
 # =============================================================================
 set -uo pipefail
 
 ORB="${ORB_SLAM3_ROOT:-$HOME/ORB_SLAM3}"
-cd "$ORB" || { echo "[ERROR] $ORB 不存在"; exit 1; }
+cd "$ORB" || { echo "[ERROR] $ORB not found"; exit 1; }
 
 V2DIR="${1:-$(cd "$(dirname "$0")" && pwd)}"
 FILES=(src/Tracking.cc src/System.cc include/Tracking.h include/System.h Examples/RGB-D/rgbd_tum.cc Examples/Stereo/stereo_kitti.cc)
 mkdir -p code_backups_tum
 
-# ---- 1) 备份当前代码 (若是 v1 版) ----
+# ---- 1) back up the current code (if it is the v1 version) ----
 if grep -q "LK_CONSISTENCY_THRESHOLD" src/Tracking.cc; then
   for f in "${FILES[@]}"; do cp -f "$f" "${f}.bak_tum_v1"; done
-  echo "[bak] 当前 v1 LK 代码已备份为 *.bak_tum_v1"
+  echo "[bak] current v1 LK code backed up as *.bak_tum_v1"
 elif grep -q "LK_MM_MATCH_TH" src/Tracking.cc; then
   for f in "${FILES[@]}"; do cp -f "$f" "${f}.bak_tum_v2"; done
-  echo "[bak] 当前 v2 代码已备份为 *.bak_tum_v2"
+  echo "[bak] current v2 code backed up as *.bak_tum_v2"
 else
-  echo "[bak] 当前为基线代码 (无备份, 无需)"
+  echo "[bak] current code is the baseline (nothing to back up)"
 fi
 
-# ---- 2) baseline 备份 (git HEAD) ----
+# ---- 2) baseline backup (git HEAD) ----
 for f in "${FILES[@]}"; do
   b="code_backups_tum/$(basename "$f").baseline"
-  git show HEAD:"$f" > "$b" 2>/dev/null || { echo "[ERROR] git show HEAD:$f 失败"; exit 1; }
+  git show HEAD:"$f" > "$b" 2>/dev/null || { echo "[ERROR] git show HEAD:$f failed"; exit 1; }
 done
-echo "[ok] baseline 备份就绪 (code_backups_tum/*.baseline)"
+echo "[ok] baseline backups ready (code_backups_tum/*.baseline)"
 
-# ---- 3) 复制 v2 代码 ----
+# ---- 3) copy the v2 code ----
 for pair in "src/Tracking.cc:Tracking_v2.cc" "include/Tracking.h:Tracking_v2.h"; do
   dst="${pair%%:*}"; srcname="${pair##*:}"
   if [ ! -f "$V2DIR/$srcname" ]; then
-    echo "[ERROR] 缺 $V2DIR/$srcname"; exit 1
+    echo "[ERROR] missing $V2DIR/$srcname"; exit 1
   fi
   cp -f "$V2DIR/$srcname" "$dst"
 done
-echo "[ok] v2 代码已复制"
-# System.cc 先恢复基线, 稍后 (3a2) 会打上 Shutdown() 打印 LK 统计的补丁; 示例程序保持纯净版 (headless)
+echo "[ok] v2 code copied"
+# System.cc is restored to the baseline first; step (3a2) below applies the Shutdown() patch that prints LK statistics. Example programs stay pristine (headless).
 for f in src/System.cc include/System.h Examples/RGB-D/rgbd_tum.cc Examples/Stereo/stereo_kitti.cc; do
-  cp -f "code_backups_tum/$(basename "$f").baseline" "$f" || { echo "[ERROR] 缺 $f 的 baseline"; exit 1; }
+  cp -f "code_backups_tum/$(basename "$f").baseline" "$f" || { echo "[ERROR] missing the baseline for $f"; exit 1; }
 done
-echo "[ok] System/示例程序已恢复为纯净版"
-# 关闭 Pangolin Viewer (headless 运行, 不影响轨迹与耗时统计)
+echo "[ok] System/example programs restored to the pristine state"
+# Disable the Pangolin Viewer (headless runs; does not affect trajectories or timing statistics)
 sed -i 's/System::RGBD, *true)/System::RGBD, false)/' Examples/RGB-D/rgbd_tum.cc
 sed -i 's/System::STEREO, *true)/System::STEREO, false)/' Examples/Stereo/stereo_kitti.cc
-echo "[ok] 示例程序已关闭 Viewer (headless)"
-grep -q "LK_MM_MATCH_TH" src/Tracking.cc || { echo "[ERROR] v2 标记缺失, 中止"; exit 1; }
+echo "[ok] Viewer disabled in the example programs (headless)"
+grep -q "LK_MM_MATCH_TH" src/Tracking.cc || { echo "[ERROR] v2 marker missing, aborting"; exit 1; }
 
-# ---- 3b) 快照 v2 代码 (run_v2_*.sh 的 swap_to_v2 依赖 *.bak_tum_v2) ----
+# ---- 3b) snapshot the v2 code (the swap_to_v2 helper of run_v2_*.sh relies on *.bak_tum_v2) ----
 # ---- 3a2) v2 System.cc: Shutdown() prints LK stats ----
 # This ORB-SLAM3 fork has NO System destructor, so Tracking::~Tracking()
 # never runs; System::Shutdown() is the last reliable hook (S4-era mechanism).
@@ -84,26 +84,26 @@ print("[ok] System.cc Shutdown() now prints LK stats")
 PYEOF
 
 for f in "${FILES[@]}"; do cp -f "$f" "${f}.bak_tum_v2"; done
-echo "[bak] v2 快照已保存为 *.bak_tum_v2 (供实验脚本切换)"
+echo "[bak] v2 snapshot saved as *.bak_tum_v2 (used by the experiment scripts to switch states)"
 
-# ---- 3c) g2o 库检查 (make clean 会清掉它; 缺失时自动重建) ----
+# ---- 3c) g2o library check (make clean removes it; rebuild automatically when missing) ----
 if [ ! -f Thirdparty/g2o/lib/libg2o.so ]; then
-  echo "[g2o] 未找到 Thirdparty/g2o/lib/libg2o.so, 重建中 ..."
+  echo "[g2o] Thirdparty/g2o/lib/libg2o.so not found, rebuilding ..."
   ( cd Thirdparty/g2o/build && make -j4 > /tmp/build_g2o.log 2>&1 ); rc=$?
-  if [ $rc -ne 0 ]; then echo "[ERROR] g2o 重建失败:"; tail -20 /tmp/build_g2o.log; exit 1; fi
-  echo "[g2o] libg2o.so 就绪"
+  if [ $rc -ne 0 ]; then echo "[ERROR] g2o rebuild failed:"; tail -20 /tmp/build_g2o.log; exit 1; fi
+  echo "[g2o] libg2o.so is ready"
 fi
-# ---- 4) 编译 ----
+# ---- 4) build ----
 ( cd build && make -j4 rgbd_tum stereo_kitti > /tmp/build_v2.log 2>&1 ); rc=$?
 if [ $rc -ne 0 ]; then
-  echo "[ERROR] 编译失败 (rc=$rc):"
+  echo "[ERROR] build failed (rc=$rc):"
   grep -n -i -B2 -A2 "error" /tmp/build_v2.log | head -60
   exit 1
 fi
-echo "[make] rgbd_tum + stereo_kitti 编译完成"
+echo "[make] rgbd_tum + stereo_kitti built"
 
-# ---- 5) 自检 ----
-echo "[check] v2 标记:"
+# ---- 5) self-check ----
+echo "[check] v2 markers:"
 grep -c "LK_MM_MATCH_TH" src/Tracking.cc
 grep -c "LK_FB_TH" src/Tracking.cc
-echo "ALL DONE. 当前代码为 LK-v2."
+echo "ALL DONE. Current code is LK-v2."

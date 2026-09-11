@@ -11,7 +11,7 @@ Run date: 2026-08-19. evo_ape kitti -a (SE(3) Umeyama, ATE RMSE m).
 | 09 | 1.9995±0.0410 | 2.4045±0.6654 | +20.3% | 0.250 | 5.73/6.64 | 27.4 | 29.3 | 383 | 0 | 0.083 |
 | 10 | 1.3326±0.1628 | 1.3339±0.0670 | +0.1% | 1.000 | 5.32/6.53 | 32.4 | 36.1 | 421 | 0 | 0.061 |
 
-逐轮 ATE:
+Per-run ATE:
 - 00: base 1.1905 1.1908 1.2874 | v2 1.1866 1.2908 1.2195
 - 02: base 5.2935 5.5705 5.3033 | v2 4.8999 5.0261 5.3991
 - 05: base 2.8585 1.2213 0.9281 | v2 0.8502 0.9563 0.8539
@@ -20,6 +20,6 @@ Run date: 2026-08-19. evo_ape kitti -a (SE(3) Umeyama, ATE RMSE m).
 - 10: base 1.5070 1.3064 1.1845 | v2 1.2935 1.2970 1.4112
 
 ## Conclusions (paper-ready wording)
-- 6/6 序列统计中性 (p>=0.25)。00/07/10 几乎零差 (+0.8/+0.4/+0.1%); 02 方向性 -5.2%; 05 方向性 -46.9% (基线 r1=2.86 灾难轮驱动, n=3 不显著); 09 数值 +20.3% (v2 r2=3.17 离群轮, ns)。
-- 关键对照: v9 naive LK 在 KITTI 00 劣化 +15.7% (v9 旧 p=0.56 口径不可复现，统一置换口径 p=0.75); v2 竞争式选择在 KITTI 00 仅 +0.8% (p=1.000) -> 户外 never-worse 成立, naive 劣化根因(坏种子带偏投影搜索)被竞争机制消除。
-- 耗时 +0.7~1.2 ms (+8~23%); LK 触发 13-32% 帧、采纳 29-40% (占触发帧, 即 5-11% 总帧); 零回退; FB 误差 0.05-0.08 px。
+- 6/6 sequences are statistically neutral (p>=0.25). 00/07/10 are almost identical (+0.8/+0.4/+0.1%); 02 is directionally better by -5.2%; 05 is directionally better by -46.9% (driven by the baseline r1=2.86 catastrophic run, not significant at n=3); 09 is numerically +20.3% (v2 r2=3.17 outlier run, ns).
+- Key control: the v9 naive LK degraded KITTI 00 by +15.7% (the legacy v9 p=0.56 definition is not reproducible; the unified permutation definition gives p=0.75); the v2 competing selection on KITTI 00 changes ATE by only +0.8% (p=1.000), so the outdoor never-worse claim holds and the root cause of the naive degradation (bad seeds steering the projection search) is removed by the competition mechanism.
+- Per-frame cost +0.7 to +1.2 ms (+8 to +23%); LK triggers on 13-32% of frames and is adopted on 29-40% of those (5-11% of all frames); zero fallbacks; FB error 0.05-0.08 px.

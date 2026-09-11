@@ -7,9 +7,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-GT_DESK  = os.environ.get("GT_DESK_PATH", r"D:\0 科研学习\SLAM\result\analysis_data\early_tum_eval\groundtruth.txt")
+GT_DESK  = os.environ.get("GT_DESK_PATH", r"D:\SLAM\result\analysis_data\early_tum_eval\groundtruth.txt")
 GT_DESK2 = os.path.join(ROOT, "diagnosis_data", "rgbd_dataset_freiburg1_desk2", "groundtruth.txt")
-V2DIR = os.environ.get("TUM_V2_ROOT", r"D:\0 科研学习\SLAM\result\evo_results\tum_experiments\v2_tum")
+V2DIR = os.environ.get("TUM_V2_ROOT", r"D:\SLAM\result\evo_results\tum_experiments\v2_tum")
 FIGOUT = os.path.join(ROOT, "figures", "fig_v10_desk2_diagnosis.png")
 MDOUT  = os.path.join(ROOT, "diagnosis_data", "diag_fr1_desk2.md")
 
@@ -167,41 +167,41 @@ def fms(x):  # mean ± std
     return f"{np.nanmean(x):.3f} ± {np.nanstd(x):.3f}"
 
 L = []
-L.append("# fr1_desk2 机制诊断：GT 速度剖面 + LK 质量（实测数据）\n")
-L.append("> 2026-08-18 补充；数据：LK_MM_MATCH_TH=200，n=12；速度剖面由 GT 插值到 RGB 帧时刻计算。\n")
-L.append("## 1. GT 速度剖面（实测）\n")
-L.append("| 指标 | fr1_desk | fr1_desk2 |\n|---|--:|--:|")
+L.append("# fr1_desk2 mechanism diagnosis: GT velocity profile and LK quality (measured)\n")
+L.append("> Added 2026-08-18; data: LK_MM_MATCH_TH=200, n=12; the velocity profile is obtained by interpolating the ground truth to the RGB frame timestamps.\n")
+L.append("## 1. GT velocity profile (measured)\n")
+L.append("| Quantity | fr1_desk | fr1_desk2 |\n|---|--:|--:|")
 p1, p2 = prof["fr1_desk"], prof["fr1_desk2"]
-L.append(f"| 路径长度 (m) | {p1['path_len']:.1f} | {p2['path_len']:.1f} |")
-L.append(f"| 累计旋转 (deg) | {p1['rot_sum']:.0f} | {p2['rot_sum']:.0f} |")
-L.append(f"| 时长 (s) | {p1['dur']:.1f} | {p2['dur']:.1f} |")
-L.append(f"| 线速度中位 (m/s) | {np.median(p1['tspd']):.2f} | {np.median(p2['tspd']):.2f} |")
-L.append(f"| 线速度 p95 (m/s) | {np.percentile(p1['tspd'],95):.2f} | {np.percentile(p2['tspd'],95):.2f} |")
-L.append(f"| 旋转速率中位 (deg/s) | {np.median(p1['rspd']):.1f} | {np.median(p2['rspd']):.1f} |")
-L.append(f"| 旋转速率 p95 (deg/s) | {np.percentile(p1['rspd'],95):.1f} | {np.percentile(p2['rspd'],95):.1f} |")
-L.append(f"| 每帧平移中位 (mm/frame) | {np.median(p1['dtrans'])*1e3:.1f} | {np.median(p2['dtrans'])*1e3:.1f} |")
-L.append(f"| 每帧旋转中位 (deg/frame) | {np.median(p1['drot']):.2f} | {np.median(p2['drot']):.2f} |")
-L.append("\n## 2. LK 质量与决策（12 轮均值）\n")
-L.append("| 指标 | fr1_desk | fr1_desk2 |\n|---|--:|--:|")
-for k, lab in [("weak_pct", "LK 触发（弱运动模型）%"), ("adopted_pct", "LK 采纳 %（占帧）"),
-               ("fb_err", "FB 平均往返误差 (px)"), ("fb_rej", "FB 拒绝点/轮"),
-               ("ncc_rej", "NCC 拒绝点/轮"), ("margin_mean", "采纳时 match margin"),
-               ("fallbacks", "采纳后回退数")]:
+L.append(f"| Path length (m) | {p1['path_len']:.1f} | {p2['path_len']:.1f} |")
+L.append(f"| Total rotation (deg) | {p1['rot_sum']:.0f} | {p2['rot_sum']:.0f} |")
+L.append(f"| Duration (s) | {p1['dur']:.1f} | {p2['dur']:.1f} |")
+L.append(f"| Median linear speed (m/s) | {np.median(p1['tspd']):.2f} | {np.median(p2['tspd']):.2f} |")
+L.append(f"| Linear speed p95 (m/s) | {np.percentile(p1['tspd'],95):.2f} | {np.percentile(p2['tspd'],95):.2f} |")
+L.append(f"| Median rotation rate (deg/s) | {np.median(p1['rspd']):.1f} | {np.median(p2['rspd']):.1f} |")
+L.append(f"| Rotation rate p95 (deg/s) | {np.percentile(p1['rspd'],95):.1f} | {np.percentile(p2['rspd'],95):.1f} |")
+L.append(f"| Median translation per frame (mm/frame) | {np.median(p1['dtrans'])*1e3:.1f} | {np.median(p2['dtrans'])*1e3:.1f} |")
+L.append(f"| Median rotation per frame (deg/frame) | {np.median(p1['drot']):.2f} | {np.median(p2['drot']):.2f} |")
+L.append("\n## 2. LK quality and decisions (mean over 12 runs)\n")
+L.append("| Quantity | fr1_desk | fr1_desk2 |\n|---|--:|--:|")
+for k, lab in [("weak_pct", "LK trigger (weak motion model) %"), ("adopted_pct", "LK adoption % (of frames)"),
+               ("fb_err", "FB mean forward-backward error (px)"), ("fb_rej", "FB rejected points per run"),
+               ("ncc_rej", "NCC rejected points per run"), ("margin_mean", "match margin at adoption"),
+               ("fallbacks", "fallbacks after adoption")]:
     L.append(f"| {lab} | {lk['fr1_desk'][k].mean():.2f} | {lk['fr1_desk2'][k].mean():.2f} |")
-L.append(f"| 采纳位姿旋转偏差中位 (deg) | {rotdev['fr1_desk'][0].mean():.2f} | {rotdev['fr1_desk2'][0].mean():.2f} |")
-L.append(f"| 拒绝位姿旋转偏差中位 (deg) | {rotdev['fr1_desk'][1].mean():.2f} | {rotdev['fr1_desk2'][1].mean():.2f} |")
-L.append("\n## 3. ATE 复算（evo rmse 逐轮解析）\n")
-L.append("| 序列 | 基线 (m) | v2 (m) | Δ% | p（精确置换） |\n|---|--:|--:|--:|--:|")
+L.append(f"| Median rotation deviation of the adopted pose (deg) | {rotdev['fr1_desk'][0].mean():.2f} | {rotdev['fr1_desk2'][0].mean():.2f} |")
+L.append(f"| Median rotation deviation of the rejected pose (deg) | {rotdev['fr1_desk'][1].mean():.2f} | {rotdev['fr1_desk2'][1].mean():.2f} |")
+L.append("\n## 3. ATE recomputation (per-run evo rmse parsed)\n")
+L.append("| Sequence | Baseline (m) | v2 (m) | delta % | p (exact permutation) |\n|---|--:|--:|--:|--:|")
 for s in seqs:
     a, b = ate[s]["baseline"], ate[s]["v2"]
     d = (b.mean() - a.mean()) / a.mean() * 100
     L.append(f"| {s} | {fms(a)} (n={len(a)}) | {fms(b)} (n={len(b)}) | {d:+.1f}% | {p_vals[s]:.3f} |")
-L.append("\n## 4. 结论\n")
-L.append("- fr1_desk2 旋转速率更高（中位 {:.1f} vs {:.1f} deg/s，p95 {:.0f} vs {:.0f} deg/s），但基线本身无失败片段，误差为均匀漂移，LK 无可救的“大崩”。".format(
+L.append("\n## 4. Conclusions\n")
+L.append("- fr1_desk2 rotates faster (median {:.1f} vs {:.1f} deg/s, p95 {:.0f} vs {:.0f} deg/s), but the baseline has no failure segment: the error is a uniform drift with no large collapse for LK to repair.".format(
     np.median(p2['rspd']), np.median(p1['rspd']), np.percentile(p2['rspd'],95), np.percentile(p1['rspd'],95)))
-L.append("- LK 在 fr1_desk2 上触发/采纳更积极且质量相当（FB 误差约 {:.3f} px，margin {:.1f}），与“触发 40% 却没收益”一致：竞争机制按设计工作，收益只在运动模型系统性失效的工况（fr1_desk）显现。".format(
+L.append("- On fr1_desk2, LK triggers and is adopted more often while its quality is comparable (FB error about {:.3f} px, margin {:.1f}); this matches the 40 percent trigger rate but no gain observation: the competition mechanism works as designed, and the gain appears only where the motion model fails systematically (fr1_desk).".format(
     lk['fr1_desk2']['fb_err'].mean(), lk['fr1_desk2']['margin_mean'].mean()))
-L.append(f"- 图：`figures/fig_v10_desk2_diagnosis.png`（速度剖面 CDF、LK 决策、角速度时间剖面）。")
+L.append(f"- Figure: `figures/fig_v10_desk2_diagnosis.png` (velocity-profile CDF, LK decisions, angular-rate time profile).")
 open(MDOUT, "w", encoding="utf-8").write("\n".join(L))
 print("markdown:", MDOUT)
 print("ATE:", {s: {t: ate[s][t].tolist() for t in ate[s]} for s in seqs})

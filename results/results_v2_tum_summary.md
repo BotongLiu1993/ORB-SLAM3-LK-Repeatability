@@ -1,8 +1,8 @@
 # v2 TUM RGB-D results (LK_MM_MATCH_TH=200)
 
-Run date: 2026-08-18/19 (fr1_desk & fr1_desk2 n=12; fr1_room n=3; fr1_360/fr1_floor n=12 完成 2026-08-19).
+Run date: 2026-08-18/19 (fr1_desk & fr1_desk2 n=12; fr1_room n=3; fr1_360/fr1_floor n=12 completed on 2026-08-19).
 
-> p 值口径（2026-08-19 统一）：精确两尾配对置换，统计量 = |mean(v-b)|，2^n 枚举（`pvalues_v10.py`）。早前 fr2_desk 0.201 / fr3_sitting 0.301 / fr3_office 0.596 为另一口径，已作废。
+> p-value definition (unified on 2026-08-19): exact two-sided paired permutation test, statistic = |mean(v-b)|, 2^n enumeration (`pvalues_v10.py`). The earlier values fr2_desk 0.201 / fr3_sitting 0.301 / fr3_office 0.596 used a different definition and are superseded.
 
 | Sequence | n | Base ATE mean | V2 ATE mean | dMean% | p (two-sided perm) | V2 med | Base med | LK att% | LK adopt% | Bad B/V | Time med B/V (ms) |
 |---|:--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
@@ -16,17 +16,17 @@ Run date: 2026-08-18/19 (fr1_desk & fr1_desk2 n=12; fr1_room n=3; fr1_360/fr1_fl
 | fr3_sitting | 3 | 0.0093 | 0.0091 | -2.2% | 0.250 | 0.0092 | 0.0094 | 19.6% | 28.7% | 0 / 0 | 6.20 / 6.86 |
 | fr3_office | 3 | 0.0105 | 0.0127 | +20.5% | 1.000 | 0.0106 | 0.0109 | 0.7% | 38.5% | 0 / 0 | 9.89 / 9.88 |
 
-Bad B/V: 退化轮次数（fr1_floor 阈值为 ATE>0.3 m；其余为明显退化轮）。逐轮 ATE:
+Bad B/V: number of degraded runs (threshold ATE > 0.3 m for fr1_floor; otherwise clearly degraded runs). Per-run ATE:
 - fr1_floor (n=12): base 0.0950 0.5072 0.9038 0.4341 0.0995 0.5068 0.1051 0.0941 0.3165 0.7262 0.9170 0.1155 | v2 0.0631 0.0752 0.1134 0.7601 0.0954 0.5601 0.1874 0.0932 0.1156 0.0932 0.7377 0.2365
 - fr1_360 (n=12): base 0.2213 0.2252 0.2214 0.2305 0.1827 0.1653 0.2744 0.1771 0.1762 0.1733 0.2335 0.2370 | v2 0.2041 0.2095 0.1585 0.2219 0.3083 0.1387 0.1754 0.1900 0.2389 0.2002 0.1495 0.1824
 - fr1_room (n=3): base 0.0669 0.0723 0.0608 | v2 0.0800 0.0631 0.0728
 
 ## Conclusions (paper-ready wording)
-- fr1_desk (n=12): 唯一统计显著正结果 -28.3% (p=0.004), 基线 2 轮退化被消除, CV 46%->2%。
-- fr1_floor (n=12): 方向性改善但**不显著**——均值 -35.1% (p=0.169), 中位 -69.5% (0.375->0.115), 退化轮(>0.3 m) 7/12->3/12、灾难轮(>0.5 m) 5/12->3/12; 但 v2 仍有 3 轮退化 (r4=0.760 / r6=0.560 / r11=0.738, r6/r11 与基线同轮), 4/12 轮劣于基线 (r4 0.434->0.760) -> 论文只能写"方向性改善 + 失败频率下降", 不可写第二正结果。
-- fr1_360 (n=12): -5.6% (p=0.533) 中性, 撤下"快旋转正结果候选"。
-- fr1_room (n=3): +8.0% (p=0.50) 中性。
-- 控制组: 全部统计中性, 无劣化。
-- never-worse 表述限定为: 控制组/平滑序列无统计显著劣化 + fr1_desk 无退化轮次; fr1_floor 逐轮不保证 never-worse。
-- LK 触发率: 快运动序列 24-55% (fr1_floor 55%), 控制组 <1-20%; 采纳率 18-51% (占触发帧)。
-- 耗时中位(池化 n=12): 快运动组 +24~32% (绝对 +1.6~1.7 ms); 控制组 +0.2~1 ms。论文如实报告, 不用 "<5%" 表述。
+- fr1_desk (n=12): the only statistically significant positive result, -28.3% (p=0.004); the 2 degraded baseline runs are removed, CoV 46% -> 2%.
+- fr1_floor (n=12): directional improvement but **not significant** - mean -35.1% (p=0.169), median -69.5% (0.375 -> 0.115), degraded runs (>0.3 m) 7/12 -> 3/12 and catastrophic runs (>0.5 m) 5/12 -> 3/12; however v2 still has 3 degraded runs (r4=0.760 / r6=0.560 / r11=0.738, with r6/r11 degraded in the baseline too) and 4/12 runs are worse than the baseline (r4 0.434 -> 0.760), so the manuscript can only claim a directional improvement with fewer failures, not a second positive result.
+- fr1_360 (n=12): -5.6% (p=0.533), neutral; the "fast-rotation positive-result candidate" claim was withdrawn.
+- fr1_room (n=3): +8.0% (p=0.50), neutral.
+- Control group: statistically neutral throughout, no degradation.
+- The never-worse claim is restricted to: no statistically significant degradation on the control/smooth sequences, and no degraded runs on fr1_desk; it is not guaranteed per run on fr1_floor.
+- LK trigger rate: 24-55% on fast-motion sequences (55% on fr1_floor), <1-20% on the control group; adoption rate 18-51% of triggering frames.
+- Median per-frame cost (pooled n=12): +24 to +32% on the fast-motion group (+1.6 to +1.7 ms absolute); +0.2 to +1 ms on the control group. Reported as measured; the "<5%" wording is not used.

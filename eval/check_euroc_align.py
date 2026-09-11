@@ -40,7 +40,7 @@ for seq,zf in SEQS.items():
                     return s,R,mu_d-s*R@mu_s
                 g=np.array([gt_pos[max(i-1,0)] for i in idx])
                 s,R,t=umeyama(est[:,1:],g)
-                print("   %s r1: nearest-GT 距离 中位=%.2f ms 最大=%.2f ms | Umeyama scale=%.4f | 帧数=%d"%(meth,np.median(near)*1e3,near.max()*1e3,s,len(est)))
+                print("   %s r1: nearest-GT distance median=%.2f ms max=%.2f ms | Umeyama scale=%.4f | frames=%d"%(meth,np.median(near)*1e3,near.max()*1e3,s,len(est)))
             elif meth=="baseline" and r==2:
                 pass
     # LK stats from v2 r1

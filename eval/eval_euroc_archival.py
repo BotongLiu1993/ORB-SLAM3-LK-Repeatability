@@ -18,8 +18,8 @@ from scipy.spatial.transform import Rotation as R
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "archive_euroc_v10.2", "evo_outputs")
-BASE = os.environ.get("EUROC_RESULTS_ROOT", r"D:\0 科研学习\SLAM\result\evo_results\v2_euroc")
-GT = os.environ.get("EUROC_GT_ROOT", r"D:\0 科研学习\SLAM\ORB_SLAM3_wsl_snapshot\evaluation\Ground_truth\EuRoC_left_cam")
+BASE = os.environ.get("EUROC_RESULTS_ROOT", r"D:\SLAM\result\evo_results\v2_euroc")
+GT = os.environ.get("EUROC_GT_ROOT", r"D:\SLAM\ORB_SLAM3_wsl_snapshot\evaluation\Ground_truth\EuRoC_left_cam")
 SEQS = ["V101", "V102", "V103"]
 RUNS = 3
 TOL = 0.03  # seconds, direct timestamp matching

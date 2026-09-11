@@ -1,44 +1,44 @@
-# fr1_desk2 机制诊断：GT 速度剖面 + LK 质量（实测数据）
+# fr1_desk2 mechanism diagnosis: GT velocity profile and LK quality (measured)
 
-> 2026-08-18 补充；数据：LK_MM_MATCH_TH=200，n=12；速度剖面由 GT 插值到 RGB 帧时刻计算。
+> Added 2026-08-18; data: LK_MM_MATCH_TH=200, n=12; the velocity profile is obtained by interpolating the ground truth to the RGB frame timestamps.
 
-## 1. GT 速度剖面（实测）
+## 1. GT velocity profile (measured)
 
-| 指标 | fr1_desk | fr1_desk2 |
+| Quantity | fr1_desk | fr1_desk2 |
 |---|--:|--:|
-| 路径长度 (m) | 9.3 | 9.9 |
-| 累计旋转 (deg) | 662 | 974 |
-| 时长 (s) | 19.8 | 21.3 |
-| 线速度中位 (m/s) | 0.48 | 0.46 |
-| 线速度 p95 (m/s) | 0.79 | 0.84 |
-| 旋转速率中位 (deg/s) | 34.0 | 44.4 |
-| 旋转速率 p95 (deg/s) | 75.0 | 93.1 |
-| 每帧平移中位 (mm/frame) | 16.3 | 15.7 |
-| 每帧旋转中位 (deg/frame) | 1.14 | 1.47 |
+| Path length (m) | 9.3 | 9.9 |
+| Total rotation (deg) | 662 | 974 |
+| Duration (s) | 19.8 | 21.3 |
+| Median linear speed (m/s) | 0.48 | 0.46 |
+| Linear speed p95 (m/s) | 0.79 | 0.84 |
+| Median rotation rate (deg/s) | 34.0 | 44.4 |
+| Rotation rate p95 (deg/s) | 75.0 | 93.1 |
+| Median translation per frame (mm/frame) | 16.3 | 15.7 |
+| Median rotation per frame (deg/frame) | 1.14 | 1.47 |
 
-## 2. LK 质量与决策（12 轮均值）
+## 2. LK quality and decisions (mean over 12 runs)
 
-| 指标 | fr1_desk | fr1_desk2 |
+| Quantity | fr1_desk | fr1_desk2 |
 |---|--:|--:|
-| LK 触发（弱运动模型）% | 23.76 | 40.08 |
-| LK 采纳 %（占帧） | 12.17 | 17.27 |
-| FB 平均往返误差 (px) | 0.15 | 0.16 |
-| FB 拒绝点/轮 | 1398.75 | 3109.75 |
-| NCC 拒绝点/轮 | 1292.75 | 2310.83 |
-| 采纳时 match margin | 11.06 | 18.19 |
-| 采纳后回退数 | 0.00 | 0.00 |
-| 采纳位姿旋转偏差中位 (deg) | 0.99 | 0.91 |
-| 拒绝位姿旋转偏差中位 (deg) | 0.78 | 0.68 |
+| LK trigger (weak motion model) % | 23.76 | 40.08 |
+| LK adoption % (of frames) | 12.17 | 17.27 |
+| FB mean forward-backward error (px) | 0.15 | 0.16 |
+| FB rejected points per run | 1398.75 | 3109.75 |
+| NCC rejected points per run | 1292.75 | 2310.83 |
+| match margin at adoption | 11.06 | 18.19 |
+| fallbacks after adoption | 0.00 | 0.00 |
+| Median rotation deviation of the adopted pose (deg) | 0.99 | 0.91 |
+| Median rotation deviation of the rejected pose (deg) | 0.78 | 0.68 |
 
-## 3. ATE 复算（evo rmse 逐轮解析）
+## 3. ATE recomputation (per-run evo rmse parsed)
 
-| 序列 | 基线 (m) | v2 (m) | Δ% | p（精确置换） |
+| Sequence | Baseline (m) | v2 (m) | delta % | p (exact permutation) |
 |---|--:|--:|--:|--:|
 | fr1_desk | 0.024 ± 0.010 (n=12) | 0.017 ± 0.000 (n=12) | -28.3% | 0.004 |
 | fr1_desk2 | 0.027 ± 0.002 (n=12) | 0.028 ± 0.002 (n=12) | +4.2% | 0.102 |
 
-## 4. 结论
+## 4. Conclusions
 
-- fr1_desk2 旋转速率更高（中位 44.4 vs 34.0 deg/s，p95 93 vs 75 deg/s），但基线本身无失败片段，误差为均匀漂移，LK 无可救的“大崩”。
-- LK 在 fr1_desk2 上触发/采纳更积极且质量相当（FB 误差约 0.158 px，margin 18.2），与“触发 40% 却没收益”一致：竞争机制按设计工作，收益只在运动模型系统性失效的工况（fr1_desk）显现。
-- 图：`figures/fig_v10_desk2_diagnosis.png`（速度剖面 CDF、LK 决策、角速度时间剖面）。
+- fr1_desk2 rotates faster (median 44.4 vs 34.0 deg/s, p95 93 vs 75 deg/s), but the baseline has no failure segment: the error is a uniform drift with no large collapse for LK to repair.
+- On fr1_desk2, LK triggers and is adopted more often while its quality is comparable (FB error about 0.158 px, margin 18.2); this matches the 40 percent trigger rate but no gain observation: the competition mechanism works as designed, and the gain appears only where the motion model fails systematically (fr1_desk).
+- Figure: `figures/fig_v10_desk2_diagnosis.png` (velocity-profile CDF, LK decisions, angular-rate time profile).

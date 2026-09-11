@@ -178,7 +178,7 @@ python "$REPO/eval/make_fig2_v10.py"
 bash "$REPO/eval/diag_fr1_desk2.sh"
 ```
 
-Environment variables (all optional; defaults are the author's original paths):
+Environment variables (all optional). The built-in defaults are ASCII-only placeholders that mirror the author's original layout; set the variables below to point at your own paths:
 
 | Variable | Used by |
 |---|---|
@@ -187,7 +187,8 @@ Environment variables (all optional; defaults are the author's original paths):
 | `TUM_RESULTS_ROOT`, `KITTI_RESULTS_ROOT` | `pvalues_v10.py` |
 | `EUROC_RESULTS_ROOT`, `EUROC_GT_ROOT` | `eval_euroc_archival.py`, `eval_euroc_corrected.py` |
 | `TUM_V2_ROOT`, `GT_DESK_PATH` | `diag_fr1_desk2.py` |
-| `DATASET_SRC` | `datasets/install_datasets.sh` |
+| `DATASET_SRC` | `datasets/install_datasets.sh` (default `$HOME/datasets_download`) |
+| `WIN_DST` | run scripts: where the per-run results are mirrored at the end of a batch (default `$HOME/slam_result_mirror/...`) |
 
 **Quick check** (no ORB-SLAM3 tree required):
 

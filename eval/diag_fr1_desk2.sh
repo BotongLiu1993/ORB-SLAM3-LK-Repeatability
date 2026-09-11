@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
-# diag_fr1_desk2.sh - fr1_desk vs fr1_desk2 速度剖面 + LK 决策统计对照
-# 用法 (WSL, ~/ORB_SLAM3 下):
+# diag_fr1_desk2.sh - fr1_desk vs fr1_desk2: velocity profile and LK decision statistics
+# Usage (WSL, from ~/ORB_SLAM3):
 #   bash "$W/diag_fr1_desk2.sh"
-# 输出:
-#   - 平移速度 / 旋转速率 的 median / p95 / max (来自 groundtruth)
-#   - LK 触发/采纳/margin/FB 汇总 (来自 results/v2_tum/v2 或 /mnt/d 已复制结果)
+# Output:
+#   - median / p95 / max of translation speed and rotation rate (from groundtruth)
+#   - LK trigger/adoption/margin/FB summary (from results/v2_tum/v2 or a mirrored /mnt/d copy)
 # =============================================================================
 set -uo pipefail
 ORB="${ORB_SLAM3_ROOT:-$HOME/ORB_SLAM3}"
@@ -16,7 +16,7 @@ import sys, os, math, re, statistics
 orb = sys.argv[1]
 
 def quat_rot_rate(q1, q2, dt):
-    # 单位四元数差 -> 旋转角 (rad) -> deg/s
+    # unit-quaternion difference -> rotation angle (rad) -> deg/s
     w1,x1,y1,z1 = q1; w2,x2,y2,z2 = q2
     w = w1*w2 + x1*x2 + y1*y2 + z1*z2
     w = max(-1.0, min(1.0, w))
@@ -25,7 +25,7 @@ def quat_rot_rate(q1, q2, dt):
 def profile(datadir):
     gt = os.path.join(datadir, "groundtruth.txt")
     if not os.path.isfile(gt):
-        print(f"  [warn] 缺 {gt}")
+        print(f"  [warn] missing {gt}")
         return None
     rows = []
     with open(gt) as f:
@@ -56,7 +56,7 @@ def stats(x):
 
 seqs = [("fr1_desk",  "datasets/rgbd_dataset_freiburg1_desk"),
         ("fr1_desk2", "datasets/rgbd_dataset_freiburg1_desk2")]
-print("== 速度剖面 (groundtruth) ==")
+print("== Velocity profile (groundtruth) ==")
 print(f"{'seq':<12}{'frames':>8}{'dur_s':>8}{'v_med':>9}{'v_p95':>9}{'v_max':>9}{'rot_med':>10}{'rot_p95':>10}{'rot_max':>10}")
 for name, d in seqs:
     pr = profile(os.path.join(orb, d))
@@ -71,12 +71,12 @@ for name, d in seqs:
     print(f"{name:<12}{len(vs):>8}{dur:>8.1f}{vm:>9.2f}{vp:>9.2f}{vx:>9.2f}{rm:>10.1f}{rp:>10.1f}{rx:>10.1f}")
 
 print()
-print("== LK 决策统计 (v2 侧, 12 轮均值) ==")
+print("== LK decision statistics (v2 side, mean over 12 runs) ==")
 resdirs = [os.path.join(orb, "results/v2_tum/v2"),
-           "/mnt/d/0 科研学习/SLAM/result/evo_results/tum_experiments/v2_tum/v2"]
+           "/mnt/d/SLAM/result/evo_results/tum_experiments/v2_tum/v2"]
 resdir = next((d for d in resdirs if os.path.isdir(d)), None)
 if not resdir:
-    print("  [warn] 未找到 v2_tum 结果目录, 跳过")
+    print("  [warn] v2_tum result directory not found, skipping")
     sys.exit(0)
 for name in ("fr1_desk", "fr1_desk2"):
     att, adp, margin, fb, frames = [], [], [], [], []
@@ -96,5 +96,5 @@ for name in ("fr1_desk", "fr1_desk2"):
     if n == 0: continue
     def m(x): return statistics.mean(x) if x else float('nan')
     f = m(frames)
-    print(f"{name:<12} att% {100*m(att)/f:6.1f}  adopt(帧%) {100*m(adp)/f:6.1f}  margin {m(margin):6.1f}  FB {m(fb):.3f} px  (n={n})")
+    print(f"{name:<12} att% {100*m(att)/f:6.1f}  adopt(frame%) {100*m(adp)/f:6.1f}  margin {m(margin):6.1f}  FB {m(fb):.3f} px  (n={n})")
 PYEOF

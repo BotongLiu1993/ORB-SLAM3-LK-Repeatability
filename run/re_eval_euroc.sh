@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# re_eval_euroc.sh - 用 evo 复核已保存的 EuRoC 轨迹 (不重跑 SLAM)  v2
-#   修正 v1 的 bug: 轨迹时间戳为纳秒(ns), 而 evo 读 .txt 按秒处理, 导致
-#   "found no matching timestamps"。v2 将 GT 与轨迹统一转为 TUM(秒) 后再算。
-#   GT: data.csv -> GT.tum (秒, 四元数重排为 qx qy qz qw)
-#   轨迹: traj.txt (ns) -> shifted.tum (秒, 加上每序列实测固定偏移)
-#   用法 (WSL):
+# re_eval_euroc.sh - re-evaluate saved EuRoC trajectories with evo (no SLAM rerun), v2
+#   Fixes a v1 bug: trajectory timestamps are in nanoseconds while evo treats .txt as seconds, giving
+#   "found no matching timestamps". v2 converts both ground truth and trajectory to TUM (seconds) first.
+#   GT: data.csv -> GT.tum (seconds, quaternion reordered to qx qy qz qw)
+#   Trajectory: traj.txt (ns) -> shifted.tum (seconds, plus the fixed per-sequence offset measured empirically)
+#   Usage (WSL):
 #     bash "$W/re_eval_euroc.sh"
-#   输出:
+#   Output:
 #     results/v2_euroc/re_eval/{seq}_{meth}_r{r}_{gt.tum,shift.tum,evo.txt,evo.zip}
 # =============================================================================
 set -uo pipefail
 ORB="${ORB_SLAM3_ROOT:-$HOME/ORB_SLAM3}"
-cd "$ORB" || { echo "[ERROR] $ORB 不存在"; exit 1; }
+cd "$ORB" || { echo "[ERROR] $ORB not found"; exit 1; }
 OUT="results/v2_euroc"
 mkdir -p "$OUT/re_eval"
 
@@ -22,7 +22,7 @@ DIR[V102]="datasets/euroc/V1_02_medium"
 DIR[V103]="datasets/euroc/V1_03_difficult"
 
 gt_to_tum() {
-  # $1=data.csv $2=输出 GT.tum ; 四元数: csv(qw qx qy qz) -> tum(qx qy qz qw), 时间 ns -> s
+  # $1=data.csv $2=output GT.tum ; quaternion: csv(qw qx qy qz) -> tum(qx qy qz qw), time ns -> s
   python3 - "$1" "$2" <<'PY'
 import sys
 src, out = sys.argv[1], sys.argv[2]
@@ -40,7 +40,7 @@ PY
 }
 
 shift_to_tum() {
-  # $1=轨迹(ns, tum列序) $2=输出 shifted.tum(秒) $3=GT data.csv ; 偏移 = GT首帧 - est首帧
+  # $1=trajectory (ns, TUM column order) $2=output shifted.tum (seconds) $3=GT data.csv ; offset = GT first frame - est first frame
   python3 - "$1" "$2" "$3" <<'PY'
 import sys
 traj, out, gtcsv = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -65,7 +65,7 @@ PY
 
 for seq in V101 V102 V103; do
   gt="${DIR[$seq]}/mav0/state_groundtruth_estimate0/data.csv"
-  [ -f "$gt" ] || { echo "[warn] 缺 GT: $gt, 跳过 $seq"; continue; }
+  [ -f "$gt" ] || { echo "[warn] ground truth missing: $gt, skipping $seq"; continue; }
   gt_tum="$OUT/re_eval/${seq}_GT.tum"
   gt_to_tum "$gt" "$gt_tum"
   for meth in baseline v2; do
@@ -82,4 +82,4 @@ for seq in V101 V102 V103; do
     done
   done
 done
-echo "DONE. 复核结果在 $OUT/re_eval/"
+echo "DONE. Re-evaluation results in $OUT/re_eval/"

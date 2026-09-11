@@ -30,7 +30,7 @@ $ORB_SLAM3_ROOT/datasets/
 `install_datasets.sh` is a convenience script written for the author's WSL
 setup (it extracts archives already downloaded to a local folder, configured
 via the `DATASET_SRC` environment variable, default
-`/mnt/d/0 科研学习/SLAM/dateset`). Reviewers can ignore it and extract the
+`/mnt/d/SLAM/dateset`). Reviewers can ignore it and extract the
 official archives directly into the layout above.
 
 Respect the original licenses of the datasets when downloading and using them.

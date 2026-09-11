@@ -1,14 +1,14 @@
 ﻿# -*- coding: utf-8 -*-
 """
-pvalues_v10.py - 精确两尾配对置换检验（论文全部 p 值的单一事实来源）
-统计量: 配对均值差的绝对值 |mean(v_i - b_i)|; 2^n 种符号组合, 精确枚举。
-TUM/KITTI 从 evo 结果文件读 rmse; EuRoC 见 eval_euroc_corrected.py。
+pvalues_v10.py - exact two-sided paired permutation tests (single source of truth for every p-value in the paper)
+Statistic: absolute paired mean difference |mean(v_i - b_i)|; all 2^n sign combinations enumerated exactly.
+TUM/KITTI read rmse from the evo result files; for EuRoC see eval_euroc_corrected.py.
 """
 import io, os, itertools
 import numpy as np
 
-TUM = os.environ.get("TUM_RESULTS_ROOT", r"D:\0 科研学习\SLAM\result\evo_results\tum_experiments\v2_tum")
-KITTI = os.environ.get("KITTI_RESULTS_ROOT", r"D:\0 科研学习\SLAM\result\evo_results\v2_kitti")
+TUM = os.environ.get("TUM_RESULTS_ROOT", r"D:\SLAM\result\evo_results\tum_experiments\v2_tum")
+KITTI = os.environ.get("KITTI_RESULTS_ROOT", r"D:\SLAM\result\evo_results\v2_kitti")
 
 TUM_SEQS = {
     "fr1_desk": 12, "fr1_desk2": 12, "fr1_room": 3, "fr1_360": 12, "fr1_floor": 12,

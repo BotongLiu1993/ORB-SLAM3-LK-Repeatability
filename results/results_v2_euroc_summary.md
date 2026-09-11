@@ -1,13 +1,13 @@
-# EuRoC stereo-only 重评结果（2026-08-19 修正评估）
+# EuRoC stereo-only re-evaluation (corrected evaluation, 2026-08-19)
 
-> **修正说明（重要）**：早期 `re_eval_euroc.sh` 用 `state_groundtruth_estimate0/data.csv`（body 系、EKF 估计）并强加固定时间偏移（V101 +1.04 s 等），导致估计轨迹与 GT 帧错位约 21 帧，ATE 虚高 5–11 倍（V101 0.45 m / V103 0.93 m 为错误值）。
-> **正确口径**：GT 用 ORB-SLAM3 官方仓库 `evaluation/Ground_truth/EuRoC_left_cam/{seq}_GT.txt`（左相机轨迹，20 Hz）；估计轨迹时间戳（cam 时钟）直接时间匹配（cam 与 vicon 同时钟域，GT 晚开始是记录起点差异而非时钟差），SE(3) Umeyama（不修尺度），ATE RMSE (m)。
-> 归档脚本：`v10_work/eval_euroc_corrected.py` 与 `v10_work/eval_euroc_archival.py`（含置换 p 值）；逐轮 evo 风格输出、逐帧误差与汇总见 `v10_work/archive_euroc_v10.2/`（evo_outputs/ + summary_per_run.csv + summary_pooled.txt）。
-> p 值口径：配对差均值 |mean(v-b)|，2^n 枚举，1e-12 容差；2026-08-19 修正边界浮点伪差后 V102 p=1.000（原 0.750）。
+> **Correction (important)**: the earlier `re_eval_euroc.sh` used `state_groundtruth_estimate0/data.csv` (body frame, EKF estimate) and forced a fixed time offset (V101 +1.04 s, etc.), which misaligned the estimated trajectory against the ground-truth frames by about 21 frames and inflated ATE by 5-11x (the values V101 0.45 m / V103 0.93 m are wrong).
+> **Corrected protocol**: ground truth is the official ORB-SLAM3 repository file `evaluation/Ground_truth/EuRoC_left_cam/{seq}_GT.txt` (left-camera trajectory, 20 Hz); estimated timestamps (camera clock) are matched by direct time association (camera and vicon share a clock domain, and the later ground-truth start is a recording-origin difference rather than a clock offset), SE(3) Umeyama (no scale correction), ATE RMSE in m.
+> Archival scripts: `v10_work/eval_euroc_corrected.py` and `v10_work/eval_euroc_archival.py` (with permutation p-values); per-run evo-style outputs, per-frame errors and the summary are in `v10_work/archive_euroc_v10.2/` (evo_outputs/ + summary_per_run.csv + summary_pooled.txt).
+> p-value definition: paired difference mean |mean(v-b)|, 2^n enumeration, 1e-12 tolerance; after fixing a floating-point artefact at the boundary on 2026-08-19, V102 gives p=1.000 (previously 0.750).
 
-## 逐轮与汇总（n=3）
+## Per-run and pooled results (n=3)
 
-| 序列 | Method | r1 | r2 | r3 | mean±std | Δ mean | p | 尺度比 est/GT |
+| Sequence | Method | r1 | r2 | r3 | mean+-std | delta mean | p | scale ratio est/GT |
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|---|
 | V101 | Baseline | 0.0399 | 0.0360 | 0.0554 | 0.0438 ± 0.0104 | — | — | 1.015–1.024 |
 | V101 | +LK-v2 | 0.0344 | 0.0374 | 0.0357 | 0.0359 ± 0.0015 | −18.1% | 0.500 | 1.018–1.029 |
@@ -16,9 +16,9 @@
 | V103 | Baseline | 0.2146 | 0.1174 | 0.1624 | 0.1648 ± 0.0490 | — | — | 1.068–1.158 |
 | V103 | +LK-v2 | 0.0525 | 0.0664 | 0.1618 | 0.0936 ± 0.0598 | −43.2% | 0.250 | 1.055–1.064 |
 
-## 结论（论文表述依据）
-- 修正后绝对量级与文献一致：V101/V102 ≈ 0.03–0.06 m；V103 基线 0.12–0.21 m（difficult 序列）。
-- 方向性：V101 −18.1%、V103 −43.2%（v2 数值更好）、V102 +4.3%（v2 r3=0.0583 单轮离群）；n=3 精确置换均不显著（p=0.500/1.000/0.250）→ 论文写「数值方向性更优/持平，统计中性」。
-- **V103 尺度漂移**：基线估计路径/GT = 1.07–1.16，v2 收敛至 1.055–1.064 → 与 LK 在弱运动模型帧持续纠偏的机制一致（EuRoC 上 v2 最有价值的方向性证据）。
-- 数据官方性：EuRoC_TimeStamps 2912/1710/2149 行（快照 git HEAD 原版，未改动）；GT 路径 58.6/75.9/79.0 m 与官方一致；EuRoC.yaml 为官方 stereo 配置（双目标定 fx=458.654、baseline 0.110 m）。
-- 耗时（与评估修正无关，仍有效）：基线中位 5.4–6.6 ms，v2 +0.9–2.0 ms/帧（+10~42%，V103 最大）；每次触发成本 3.5–6 ms；LK 触发 24–41% 帧、FB 误差 ≤0.02 px、零回退（见 euroc_timing_mechanism.md）。
+## Conclusions (basis for the manuscript wording)
+- After the correction the absolute magnitudes agree with the literature: V101/V102 ~ 0.03-0.06 m; V103 baseline 0.12-0.21 m (difficult sequence).
+- Direction: V101 -18.1%, V103 -43.2% (v2 lower), V102 +4.3% (v2 r3=0.0583, a single-run outlier); with n=3 none of the exact permutation tests is significant (p=0.500/1.000/0.250), so the manuscript states "numerically better or comparable, statistically neutral".
+- **V103 scale drift**: the baseline estimated path length / GT = 1.07-1.16, while v2 converges to 1.055-1.064; this is consistent with LK continuously correcting frames where the motion model is weak (the most valuable directional evidence for v2 on EuRoC).
+- Data provenance: the EuRoC_TimeStamps files have 2912/1710/2149 lines (unchanged from the snapshotted git HEAD); the ground-truth path lengths 58.6/75.9/79.0 m match the official values; EuRoC.yaml is the official stereo configuration (stereo calibration fx=458.654, baseline 0.110 m).
+- Timing (unaffected by the evaluation fix and still valid): baseline median 5.4-6.6 ms, v2 +0.9-2.0 ms per frame (+10 to +42%, largest on V103); 3.5-6 ms per trigger; LK triggers on 24-41% of frames, forward-backward error <= 0.02 px, zero fallbacks (see euroc_timing_mechanism.md).

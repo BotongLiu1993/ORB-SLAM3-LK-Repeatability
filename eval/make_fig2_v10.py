@@ -4,15 +4,15 @@
 make_fig2_v10.py - Figure 2 (v10): fr1_desk & fr1_desk2 per-run ATE (n=12),
 baseline (ORB-SLAM3) vs LK-v2 (verified competing motion prior).
 
-- 自动 pip installing缺失包 (matplotlib / numpy)
-- 自动定位数据: D:\\0 科研学习\\SLAM\\result\\evo_results\\tum_experiments\\v2_tum
-  (找不到时回退到本地 results/v2_tum)
-- 双面板图: fr1/desk (左) + fr1/desk2 (右), 箱线 + 散点 + 配对连线
-- 统计: 两尾配对置换检验 (20000 次, 固定随机种子)
+- automatically pip-installs missing packages (matplotlib / numpy)
+- auto-locates the data under D:\\SLAM\\result\\evo_results\\tum_experiments\\v2_tum
+  (falls back to the local results/v2_tum)
+- two-panel figure: fr1/desk (left) + fr1/desk2 (right), box plots + scatter + paired lines
+- statistics: two-sided paired permutation test (20000 draws, fixed random seed)
 
-用法 (Windows 本地, miniconda):
+Usage (Windows, miniconda):
     python make_fig2_v10.py
-输出: fig2_v10_tum.png (保存到脚本所在目录的 figures/)
+Output: fig2_v10_tum.png (written to figures/ next to this script)
 """
 import os
 import re
@@ -42,7 +42,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 ROOT_CANDIDATES = [
-    r"D:\0 科研学习\SLAM\result\evo_results\tum_experiments\v2_tum",
+    r"D:\SLAM\result\evo_results\tum_experiments\v2_tum",
     os.path.join(os.getcwd(), "results", "v2_tum"),
     r"C:\Users\Administrator\Documents\Codex\2026-08-12\wo\v10_work\results\v2_tum",
 ]
@@ -55,7 +55,7 @@ def find_root():
     for cand in ROOT_CANDIDATES:
         if os.path.isdir(os.path.join(cand, "v2")):
             return cand
-    print("[ERROR] not found v2_tum 结果目录, check:")
+    print("[ERROR] v2_tum result directory not found, checked:")
     for cand in ROOT_CANDIDATES:
         print("   ", cand)
     sys.exit(1)
